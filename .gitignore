@@ -1,0 +1,17 @@
+# Android / Gradle
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+*/build
+.cxx
+Captures
+.externalNativeBuild
+
+# Markdown rule: ignore all markdown files except README.md
+*.md
+**/*.md
+!README.md
+!**/README.md
