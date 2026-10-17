@@ -24,22 +24,34 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mahin.hytune.ui.components.CpuClusterCard
 import com.mahin.hytune.ui.components.CpuCoreGrid
+import com.mahin.hytune.ui.components.GpuCard
 import com.mahin.hytune.ui.cpu.CpuViewModel
+import com.mahin.hytune.ui.gpu.GpuViewModel
 
 @Composable
 fun TuneScreen(
     modifier: Modifier = Modifier,
-    viewModel: CpuViewModel = hiltViewModel()
+    cpuViewModel: CpuViewModel = hiltViewModel(),
+    gpuViewModel: GpuViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val cpuUiState by cpuViewModel.uiState.collectAsStateWithLifecycle()
+    val gpuUiState by gpuViewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.userMessage) {
-        val msg = uiState.userMessage
+    LaunchedEffect(cpuUiState.userMessage) {
+        val msg = cpuUiState.userMessage
         if (msg != null) {
             snackbarHostState.showSnackbar(msg)
-            viewModel.userMessageShown()
+            cpuViewModel.userMessageShown()
+        }
+    }
+
+    LaunchedEffect(gpuUiState.userMessage) {
+        val msg = gpuUiState.userMessage
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            gpuViewModel.userMessageShown()
         }
     }
 
@@ -48,7 +60,7 @@ fun TuneScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        if (uiState.isLoading && uiState.clusterPolicies.isEmpty()) {
+        if (cpuUiState.isLoading && cpuUiState.clusterPolicies.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -66,51 +78,78 @@ fun TuneScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (uiState.coreStates.isNotEmpty()) {
+                if (cpuUiState.coreStates.isNotEmpty()) {
                     CpuCoreGrid(
-                        coreStates = uiState.coreStates,
-                        liveFrequenciesKHz = uiState.liveCoreFrequencies,
+                        coreStates = cpuUiState.coreStates,
+                        liveFrequenciesKHz = cpuUiState.liveCoreFrequencies,
                         onCoreToggled = { coreId, online ->
-                            viewModel.onCoreOnlineToggled(coreId, online)
+                            cpuViewModel.onCoreOnlineToggled(coreId, online)
                         }
                     )
                 }
 
-                uiState.clusterPolicies.forEach { policy ->
-                    val stagedGov = uiState.stagedGovernors[policy.clusterId] ?: policy.currentGovernor
-                    val stagedMin = uiState.stagedMinFreqs[policy.clusterId] ?: policy.minFreqKHz
-                    val stagedMax = uiState.stagedMaxFreqs[policy.clusterId] ?: policy.maxFreqKHz
-                    val firstCore = policy.affectedCores.firstOrNull() ?: 0
-                    val liveFreq = uiState.liveCoreFrequencies[firstCore] ?: policy.curFreqKHz
-                    val isDirty = uiState.isDirty(policy.clusterId)
+                uiStateCpuPolicies(
+                    cpuUiState = cpuUiState,
+                    cpuViewModel = cpuViewModel
+                )
 
-                    CpuClusterCard(
-                        policy = policy,
-                        stagedGovernor = stagedGov,
-                        stagedMinFreqKHz = stagedMin,
-                        stagedMaxFreqKHz = stagedMax,
-                        liveFreqKHz = liveFreq,
-                        isDirty = isDirty,
-                        isApplying = uiState.isApplying,
-                        onGovernorChanged = { newGov ->
-                            viewModel.onGovernorChanged(policy.clusterId, newGov)
-                        },
-                        onMinFreqChanged = { newMin ->
-                            viewModel.onMinFreqChanged(policy.clusterId, newMin)
-                        },
-                        onMaxFreqChanged = { newMax ->
-                            viewModel.onMaxFreqChanged(policy.clusterId, newMax)
-                        },
-                        onApplyClicked = {
-                            viewModel.applyClusterSettings(policy.clusterId)
-                        },
-                        onResetClicked = {
-                            viewModel.resetClusterSettings(policy.clusterId)
-                        }
-                    )
-                }
+                GpuCard(
+                    policy = gpuUiState.policy,
+                    stagedGovernor = gpuUiState.stagedGovernor,
+                    stagedMinFreqKHz = gpuUiState.stagedMinFreqKHz,
+                    stagedMaxFreqKHz = gpuUiState.stagedMaxFreqKHz,
+                    liveFreqKHz = gpuUiState.liveFreqKHz,
+                    isDirty = gpuUiState.isDirty(),
+                    isApplying = gpuUiState.isApplying,
+                    onGovernorChanged = { gpuViewModel.onGovernorChanged(it) },
+                    onMinFreqChanged = { gpuViewModel.onMinFreqChanged(it) },
+                    onMaxFreqChanged = { gpuViewModel.onMaxFreqChanged(it) },
+                    onApplyClicked = { gpuViewModel.applyGpuSettings() },
+                    onResetClicked = { gpuViewModel.resetGpuSettings() }
+                )
             }
         }
     }
 }
+
+@Composable
+private fun uiStateCpuPolicies(
+    cpuUiState: com.mahin.hytune.ui.cpu.CpuUiState,
+    cpuViewModel: CpuViewModel
+) {
+    cpuUiState.clusterPolicies.forEach { policy ->
+        val stagedGov = cpuUiState.stagedGovernors[policy.clusterId] ?: policy.currentGovernor
+        val stagedMin = cpuUiState.stagedMinFreqs[policy.clusterId] ?: policy.minFreqKHz
+        val stagedMax = cpuUiState.stagedMaxFreqs[policy.clusterId] ?: policy.maxFreqKHz
+        val firstCore = policy.affectedCores.firstOrNull() ?: 0
+        val liveFreq = cpuUiState.liveCoreFrequencies[firstCore] ?: policy.curFreqKHz
+        val isDirty = cpuUiState.isDirty(policy.clusterId)
+
+        CpuClusterCard(
+            policy = policy,
+            stagedGovernor = stagedGov,
+            stagedMinFreqKHz = stagedMin,
+            stagedMaxFreqKHz = stagedMax,
+            liveFreqKHz = liveFreq,
+            isDirty = isDirty,
+            isApplying = cpuUiState.isApplying,
+            onGovernorChanged = { newGov ->
+                cpuViewModel.onGovernorChanged(policy.clusterId, newGov)
+            },
+            onMinFreqChanged = { newMin ->
+                cpuViewModel.onMinFreqChanged(policy.clusterId, newMin)
+            },
+            onMaxFreqChanged = { newMax ->
+                cpuViewModel.onMaxFreqChanged(policy.clusterId, newMax)
+            },
+            onApplyClicked = {
+                cpuViewModel.applyClusterSettings(policy.clusterId)
+            },
+            onResetClicked = {
+                cpuViewModel.resetClusterSettings(policy.clusterId)
+            }
+        )
+    }
+}
+
 
