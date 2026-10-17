@@ -26,20 +26,24 @@ import com.mahin.hytune.ui.components.CpuClusterCard
 import com.mahin.hytune.ui.components.CpuCoreGrid
 import com.mahin.hytune.ui.components.GpuCard
 import com.mahin.hytune.ui.components.MemoryCard
+import com.mahin.hytune.ui.components.StorageCard
 import com.mahin.hytune.ui.cpu.CpuViewModel
 import com.mahin.hytune.ui.gpu.GpuViewModel
 import com.mahin.hytune.ui.memory.MemoryViewModel
+import com.mahin.hytune.ui.storage.StorageViewModel
 
 @Composable
 fun TuneScreen(
     modifier: Modifier = Modifier,
     cpuViewModel: CpuViewModel = hiltViewModel(),
     gpuViewModel: GpuViewModel = hiltViewModel(),
-    memoryViewModel: MemoryViewModel = hiltViewModel()
+    memoryViewModel: MemoryViewModel = hiltViewModel(),
+    storageViewModel: StorageViewModel = hiltViewModel()
 ) {
     val cpuUiState by cpuViewModel.uiState.collectAsStateWithLifecycle()
     val gpuUiState by gpuViewModel.uiState.collectAsStateWithLifecycle()
     val memoryUiState by memoryViewModel.uiState.collectAsStateWithLifecycle()
+    val storageUiState by storageViewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -72,6 +76,22 @@ fun TuneScreen(
         if (err != null) {
             snackbarHostState.showSnackbar(err)
             memoryViewModel.clearErrorMessage()
+        }
+    }
+
+    LaunchedEffect(storageUiState.userMessage) {
+        val msg = storageUiState.userMessage
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            storageViewModel.clearUserMessage()
+        }
+    }
+
+    LaunchedEffect(storageUiState.errorMessage) {
+        val err = storageUiState.errorMessage
+        if (err != null) {
+            snackbarHostState.showSnackbar(err)
+            storageViewModel.clearErrorMessage()
         }
     }
 
@@ -146,6 +166,20 @@ fun TuneScreen(
                     onTrimCachesClicked = { memoryViewModel.trimCaches(it) },
                     onCompactZramClicked = { memoryViewModel.compactZram() },
                     onApplyClicked = { memoryViewModel.applyMemorySettings() }
+                )
+
+                StorageCard(
+                    blockDevices = storageUiState.blockDevices,
+                    stagedSchedulers = storageUiState.stagedSchedulers,
+                    stagedReadAhead = storageUiState.stagedReadAhead,
+                    fstrimResult = storageUiState.fstrimResult,
+                    isDirty = { storageUiState.isDirty(it) },
+                    isApplying = storageUiState.isApplying,
+                    isTrimming = storageUiState.isTrimming,
+                    onSchedulerChanged = { dev, sched -> storageViewModel.onSchedulerChanged(dev, sched) },
+                    onReadAheadChanged = { dev, kb -> storageViewModel.onReadAheadChanged(dev, kb) },
+                    onApplyClicked = { dev -> storageViewModel.applyStorageSettings(dev) },
+                    onTrimClicked = { storageViewModel.runTrim("/data") }
                 )
             }
         }
