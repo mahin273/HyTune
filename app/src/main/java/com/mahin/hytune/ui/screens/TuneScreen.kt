@@ -25,17 +25,21 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mahin.hytune.ui.components.CpuClusterCard
 import com.mahin.hytune.ui.components.CpuCoreGrid
 import com.mahin.hytune.ui.components.GpuCard
+import com.mahin.hytune.ui.components.MemoryCard
 import com.mahin.hytune.ui.cpu.CpuViewModel
 import com.mahin.hytune.ui.gpu.GpuViewModel
+import com.mahin.hytune.ui.memory.MemoryViewModel
 
 @Composable
 fun TuneScreen(
     modifier: Modifier = Modifier,
     cpuViewModel: CpuViewModel = hiltViewModel(),
-    gpuViewModel: GpuViewModel = hiltViewModel()
+    gpuViewModel: GpuViewModel = hiltViewModel(),
+    memoryViewModel: MemoryViewModel = hiltViewModel()
 ) {
     val cpuUiState by cpuViewModel.uiState.collectAsStateWithLifecycle()
     val gpuUiState by gpuViewModel.uiState.collectAsStateWithLifecycle()
+    val memoryUiState by memoryViewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -52,6 +56,22 @@ fun TuneScreen(
         if (msg != null) {
             snackbarHostState.showSnackbar(msg)
             gpuViewModel.userMessageShown()
+        }
+    }
+
+    LaunchedEffect(memoryUiState.userMessage) {
+        val msg = memoryUiState.userMessage
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            memoryViewModel.clearUserMessage()
+        }
+    }
+
+    LaunchedEffect(memoryUiState.errorMessage) {
+        val err = memoryUiState.errorMessage
+        if (err != null) {
+            snackbarHostState.showSnackbar(err)
+            memoryViewModel.clearErrorMessage()
         }
     }
 
@@ -106,6 +126,26 @@ fun TuneScreen(
                     onMaxFreqChanged = { gpuViewModel.onMaxFreqChanged(it) },
                     onApplyClicked = { gpuViewModel.applyGpuSettings() },
                     onResetClicked = { gpuViewModel.resetGpuSettings() }
+                )
+
+                MemoryCard(
+                    vmTunables = memoryUiState.vmTunables,
+                    zramInfo = memoryUiState.zramInfo,
+                    stagedSwappiness = memoryUiState.stagedSwappiness,
+                    stagedVfsCachePressure = memoryUiState.stagedVfsCachePressure,
+                    stagedZramSizeBytes = memoryUiState.stagedZramSizeBytes,
+                    stagedAlgorithm = memoryUiState.stagedAlgorithm,
+                    isDirty = memoryUiState.isDirty,
+                    isApplying = memoryUiState.isApplying,
+                    isTrimming = memoryUiState.isTrimming,
+                    isCompacting = memoryUiState.isCompacting,
+                    onSwappinessChanged = { memoryViewModel.onSwappinessChanged(it) },
+                    onVfsCachePressureChanged = { memoryViewModel.onVfsCachePressureChanged(it) },
+                    onZramSizeChanged = { memoryViewModel.onZramSizeChanged(it) },
+                    onAlgorithmChanged = { memoryViewModel.onAlgorithmChanged(it) },
+                    onTrimCachesClicked = { memoryViewModel.trimCaches(it) },
+                    onCompactZramClicked = { memoryViewModel.compactZram() },
+                    onApplyClicked = { memoryViewModel.applyMemorySettings() }
                 )
             }
         }
