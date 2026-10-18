@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +26,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,13 +42,50 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.mahin.hytune.ui.appmanager.AppManagerTab
 import com.mahin.hytune.ui.model.AppItemUiModel
 import com.mahin.hytune.ui.viewmodel.AppFilterType
 import com.mahin.hytune.ui.viewmodel.PerAppRulesViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppsScreen(
+    modifier: Modifier = Modifier
+) {
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    val tabs = listOf("App Manager", "Per-App Profiles")
+
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        TabRow(
+            selectedTabIndex = selectedTabIndex,
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                )
+            }
+        }
+
+        when (selectedTabIndex) {
+            0 -> AppManagerTab()
+            1 -> PerAppProfilesTab()
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PerAppProfilesTab(
     viewModel: PerAppRulesViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
