@@ -22,7 +22,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -52,11 +51,35 @@ import com.mahin.hytune.domain.appmanager.model.AppTypeFilter
 @Composable
 fun AppManagerTab(
     viewModel: AppManagerViewModel = hiltViewModel(),
+    freezeGroupViewModel: FreezeGroupViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val freezeGroups by freezeGroupViewModel.groups.collectAsState()
+    val operatingGroupId by freezeGroupViewModel.operatingGroupId.collectAsState()
+    val groupStatusMessage by freezeGroupViewModel.statusMessage.collectAsState()
+    val isCreatingOrEditing by freezeGroupViewModel.isCreatingOrEditing.collectAsState()
+    val selectedGroup by freezeGroupViewModel.selectedGroup.collectAsState()
+
     var sortDropdownExpanded by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    if (isCreatingOrEditing) {
+        FreezeGroupDialog(
+            group = selectedGroup,
+            onDismiss = { freezeGroupViewModel.dismissDialog() },
+            onSave = { id, name, description, autoFreeze, delaySeconds ->
+                freezeGroupViewModel.saveGroup(
+                    id = id,
+                    name = name,
+                    description = description,
+                    autoFreeze = autoFreeze,
+                    delaySeconds = delaySeconds,
+                    packages = selectedGroup?.packages ?: emptyList()
+                )
+            }
+        )
+    }
 
     Column(
         modifier = modifier
@@ -77,7 +100,8 @@ fun AppManagerTab(
         }
 
         // Operation Status Banner
-        uiState.operationMessage?.let { message ->
+        val combinedMessage = uiState.operationMessage ?: groupStatusMessage
+        combinedMessage?.let { message ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -99,12 +123,27 @@ fun AppManagerTab(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
-                    TextButton(onClick = { viewModel.clearOperationMessage() }) {
+                    TextButton(onClick = {
+                        viewModel.clearOperationMessage()
+                        freezeGroupViewModel.clearStatusMessage()
+                    }) {
                         Text(text = "Dismiss")
                     }
                 }
             }
         }
+
+        // Freeze Groups Carousel Section
+        FreezeGroupsSection(
+            groups = freezeGroups,
+            operatingGroupId = operatingGroupId,
+            onOpenCreateDialog = { freezeGroupViewModel.openCreateDialog() },
+            onOpenEditDialog = { freezeGroupViewModel.openEditDialog(it) },
+            onDeleteGroup = { freezeGroupViewModel.deleteGroup(it) },
+            onFreezeGroup = { freezeGroupViewModel.freezeGroup(it) },
+            onUnfreezeGroup = { freezeGroupViewModel.unfreezeGroup(it) },
+            onPinShortcut = { freezeGroupViewModel.pinShortcut(it) }
+        )
 
         // Search Bar
         OutlinedTextField(
