@@ -12,13 +12,24 @@ import com.mahin.hytune.domain.cpu.CpuControlEngine
 import com.mahin.hytune.domain.engine.ProfileEngine
 import com.mahin.hytune.domain.gpu.GpuControlEngine
 import com.mahin.hytune.domain.memory.MemoryControlEngine
+import com.mahin.hytune.domain.storage.StorageControlEngine
 import com.mahin.hytune.domain.probe.HardwareProbe
 import com.mahin.hytune.domain.profile.ProfileRepository
 import com.mahin.hytune.domain.safety.BaselineSnapshotStore
 import com.mahin.hytune.domain.safety.BootloopCrashGuard
 import com.mahin.hytune.domain.safety.SafetyManager
 import com.mahin.hytune.domain.safety.SysfsPathWhitelist
-import com.mahin.hytune.domain.storage.StorageControlEngine
+import com.mahin.hytune.core.privilege.LibsuShellRunner
+import com.mahin.hytune.core.privilege.PrivilegeManager
+import com.mahin.hytune.core.privilege.RikkaShizukuShellRunner
+import com.mahin.hytune.core.privilege.RootPrivilegeBackend
+import com.mahin.hytune.core.privilege.ShizukuPrivilegeBackend
+import com.mahin.hytune.core.privilege.UnprivilegedBackend
+import com.mahin.hytune.domain.detection.ForegroundAppDetector
+import com.mahin.hytune.domain.detection.IgnoredPackagesFilter
+import com.mahin.hytune.domain.detection.strategy.CgroupForegroundStrategy
+import com.mahin.hytune.domain.detection.strategy.DumpsysForegroundStrategy
+import com.mahin.hytune.domain.detection.strategy.UsageStatsForegroundStrategy
 import com.mahin.hytune.service.battery.BatteryOptimizationManager
 import com.mahin.hytune.service.model.DaemonState
 import com.mahin.hytune.service.notification.DaemonNotificationManager
@@ -118,6 +129,29 @@ class HyTuneDaemonServiceTest {
         service.appSettingsRepository = appSettingsRepository
         service.safetyManager = safetyManager
         service.profileRepository = profileRepository
+
+        val ignoredFilter = IgnoredPackagesFilter(context)
+        val cgroupStrategy = CgroupForegroundStrategy(fakeBackend)
+        val dumpsysStrategy = DumpsysForegroundStrategy(fakeBackend)
+        val usageStatsStrategy = UsageStatsForegroundStrategy(context)
+        val runner = LibsuShellRunner(testDispatcher)
+        val shizukuRunner = RikkaShizukuShellRunner(testDispatcher)
+        val privilegeManager = PrivilegeManager(
+            rootShellRunner = runner,
+            shizukuShellRunner = shizukuRunner,
+            rootBackend = RootPrivilegeBackend(runner),
+            shizukuBackend = ShizukuPrivilegeBackend(shizukuRunner),
+            unprivilegedBackend = UnprivilegedBackend()
+        )
+        val detector = ForegroundAppDetector(
+            privilegeManager = privilegeManager,
+            cgroupStrategy = cgroupStrategy,
+            dumpsysStrategy = dumpsysStrategy,
+            usageStatsStrategy = usageStatsStrategy,
+            ignoredPackagesFilter = ignoredFilter,
+            ioDispatcher = testDispatcher
+        )
+        service.foregroundAppDetector = detector
     }
 
     @After
