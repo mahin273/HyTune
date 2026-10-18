@@ -9,6 +9,7 @@ import androidx.room.Room
 import com.mahin.hytune.data.local.db.HyTuneDatabase
 import com.mahin.hytune.data.local.db.dao.AppRuleDao
 import com.mahin.hytune.data.local.db.dao.ChargingSessionDao
+import com.mahin.hytune.data.local.db.dao.FreezeGroupDao
 import com.mahin.hytune.data.local.db.dao.ProfileDao
 import dagger.Module
 import dagger.Provides
@@ -30,7 +31,10 @@ object DatabaseModule {
             context,
             HyTuneDatabase::class.java,
             HyTuneDatabase.DATABASE_NAME
-        ).build()
+        )
+            .addMigrations(HyTuneDatabase.MIGRATION_1_2)
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
@@ -41,6 +45,9 @@ object DatabaseModule {
 
     @Provides
     fun provideChargingSessionDao(database: HyTuneDatabase): ChargingSessionDao = database.chargingSessionDao()
+
+    @Provides
+    fun provideFreezeGroupDao(database: HyTuneDatabase): FreezeGroupDao = database.freezeGroupDao()
 
     @Provides
     @Singleton

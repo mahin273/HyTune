@@ -53,6 +53,9 @@ class HyTuneDaemonService : Service() {
     @Inject
     lateinit var perAppProfileCoordinator: PerAppProfileCoordinator
 
+    @Inject
+    lateinit var autoFreezeManager: com.mahin.hytune.domain.appmanager.AutoFreezeManager
+
     private var serviceScope: CoroutineScope? = null
 
     override fun onCreate() {
@@ -68,10 +71,12 @@ class HyTuneDaemonService : Service() {
             ACTION_START -> {
                 startForegroundWithNotification()
                 daemonController.updateState(DaemonState.RUNNING)
+                autoFreezeManager.startMonitoring()
                 observeActiveProfileAndForegroundApp()
             }
             ACTION_STOP -> {
                 daemonController.updateState(DaemonState.STOPPING)
+                autoFreezeManager.stopMonitoring()
                 ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
                 stopSelf()
                 daemonController.updateState(DaemonState.STOPPED)
@@ -142,6 +147,7 @@ class HyTuneDaemonService : Service() {
     override fun onDestroy() {
         serviceScope?.cancel()
         serviceScope = null
+        autoFreezeManager.stopMonitoring()
         daemonController.updateState(DaemonState.STOPPED)
         super.onDestroy()
     }
