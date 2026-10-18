@@ -35,6 +35,8 @@ class AppSettingsRepository @Inject constructor(
         val DRY_RUN_PREVIEW_ENABLED = booleanPreferencesKey("dry_run_preview_enabled")
         val BASELINE_SNAPSHOT_JSON = stringPreferencesKey("baseline_snapshot_json")
         val GRACEFUL_SHUTDOWN_OCCURRED = booleanPreferencesKey("graceful_shutdown_occurred")
+        val DAEMON_SERVICE_ENABLED = booleanPreferencesKey("daemon_service_enabled")
+        val DAEMON_NOTIFICATION_DETAILS_ENABLED = booleanPreferencesKey("daemon_notification_details_enabled")
     }
 
     val settings: Flow<AppSettings> = dataStore.data
@@ -60,7 +62,9 @@ class AppSettingsRepository @Inject constructor(
                 safeRecoveryModeActive = preferences[PreferencesKeys.SAFE_RECOVERY_MODE_ACTIVE] ?: false,
                 dryRunPreviewEnabled = preferences[PreferencesKeys.DRY_RUN_PREVIEW_ENABLED] ?: true,
                 baselineSnapshotJson = preferences[PreferencesKeys.BASELINE_SNAPSHOT_JSON],
-                gracefulShutdownOccurred = preferences[PreferencesKeys.GRACEFUL_SHUTDOWN_OCCURRED] ?: false
+                gracefulShutdownOccurred = preferences[PreferencesKeys.GRACEFUL_SHUTDOWN_OCCURRED] ?: false,
+                daemonServiceEnabled = preferences[PreferencesKeys.DAEMON_SERVICE_ENABLED] ?: false,
+                daemonNotificationDetailsEnabled = preferences[PreferencesKeys.DAEMON_NOTIFICATION_DETAILS_ENABLED] ?: true
             )
         }
 
@@ -149,6 +153,18 @@ class AppSettingsRepository @Inject constructor(
     suspend fun setGracefulShutdownOccurred(graceful: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.GRACEFUL_SHUTDOWN_OCCURRED] = graceful
+        }
+    }
+
+    suspend fun setDaemonServiceEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.DAEMON_SERVICE_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setDaemonNotificationDetailsEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.DAEMON_NOTIFICATION_DETAILS_ENABLED] = enabled
         }
     }
 }

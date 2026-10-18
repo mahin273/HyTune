@@ -14,5 +14,7 @@ data class AppSettings(
     val safeRecoveryModeActive: Boolean = false,
     val dryRunPreviewEnabled: Boolean = true,
     val baselineSnapshotJson: String? = null,
-    val gracefulShutdownOccurred: Boolean = false
+    val gracefulShutdownOccurred: Boolean = false,
+    val daemonServiceEnabled: Boolean = false,
+    val daemonNotificationDetailsEnabled: Boolean = true
 )

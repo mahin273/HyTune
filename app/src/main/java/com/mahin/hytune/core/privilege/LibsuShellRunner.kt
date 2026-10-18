@@ -10,10 +10,12 @@ class LibsuShellRunner(
 ) : RootShellRunner {
 
     init {
-        Shell.setDefaultBuilder(
-            Shell.Builder.create()
-                .setTimeout(10)
-        )
+        runCatching {
+            Shell.setDefaultBuilder(
+                Shell.Builder.create()
+                    .setTimeout(10)
+            )
+        }
     }
 
     override fun isRootAvailable(): Boolean {
