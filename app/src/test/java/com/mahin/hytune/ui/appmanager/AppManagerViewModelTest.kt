@@ -3,8 +3,14 @@ package com.mahin.hytune.ui.appmanager
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.mahin.hytune.core.privilege.Capability
+import com.mahin.hytune.core.privilege.FakePrivilegeBackend
+import com.mahin.hytune.core.privilege.PrivilegeTier
 import com.mahin.hytune.data.local.db.HyTuneDatabase
 import com.mahin.hytune.domain.appmanager.AppManagerRepository
+import com.mahin.hytune.domain.appmanager.AppOperationEngine
+import com.mahin.hytune.domain.appmanager.PackageSafetyGuard
+import com.mahin.hytune.domain.appmanager.model.AppOperation
 import com.mahin.hytune.domain.appmanager.model.AppSortOrder
 import com.mahin.hytune.domain.appmanager.model.AppSummary
 import com.mahin.hytune.domain.appmanager.model.AppTypeFilter
@@ -20,6 +26,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +43,9 @@ class AppManagerViewModelTest {
     private lateinit var db: HyTuneDatabase
     private lateinit var gameClassifier: GameClassifier
     private lateinit var repository: AppManagerRepository
+    private lateinit var fakeBackend: FakePrivilegeBackend
+    private lateinit var safetyGuard: PackageSafetyGuard
+    private lateinit var operationEngine: AppOperationEngine
     private lateinit var viewModel: AppManagerViewModel
 
     private val sampleApps = listOf(
@@ -114,7 +124,19 @@ class AppManagerViewModelTest {
             .build()
         gameClassifier = GameClassifier(context, db.appRuleDao())
         repository = AppManagerRepository(context, gameClassifier, testDispatcher)
-        viewModel = AppManagerViewModel(repository, testDispatcher)
+
+        fakeBackend = FakePrivilegeBackend(
+            initialTier = PrivilegeTier.ROOT,
+            initialCapabilities = Capability.entries.toSet()
+        )
+        safetyGuard = PackageSafetyGuard(context)
+        operationEngine = AppOperationEngine(
+            privilegeBackend = fakeBackend,
+            safetyGuard = safetyGuard,
+            ioDispatcher = testDispatcher
+        )
+
+        viewModel = AppManagerViewModel(repository, operationEngine, testDispatcher)
         viewModel.setAppsForTesting(sampleApps)
     }
 
@@ -190,5 +212,31 @@ class AppManagerViewModelTest {
 
         viewModel.clearSelectedApp()
         assertNull(viewModel.selectedAppDetails.value)
+    }
+
+    @Test
+    fun executeOperation_freezeSuccess_updatesOperationMessage() = runTest(testDispatcher) {
+        viewModel.executeOperation("com.spotify.music", AppOperation.FREEZE)
+        val state = viewModel.uiState.first { it.operationMessage != null }
+        assertTrue(state.operationMessage!!.contains("Freeze succeeded for com.spotify.music"))
+        assertTrue(fakeBackend.getExecutedCommands().contains("pm disable-user --user 0 com.spotify.music"))
+    }
+
+    @Test
+    fun executeOperation_criticalPackageBlocked_updatesErrorMessage() = runTest(testDispatcher) {
+        viewModel.executeOperation("com.android.systemui", AppOperation.FREEZE)
+        val state = viewModel.uiState.first { it.operationMessage != null }
+        assertTrue(state.operationMessage!!.contains("critical package"))
+    }
+
+    @Test
+    fun clearOperationMessage_clearsMessage() = runTest(testDispatcher) {
+        viewModel.executeOperation("com.spotify.music", AppOperation.FREEZE)
+        val stateWithMsg = viewModel.uiState.first { it.operationMessage != null }
+        assertNotNull(stateWithMsg.operationMessage)
+
+        viewModel.clearOperationMessage()
+        val clearedState = viewModel.uiState.first { it.operationMessage == null }
+        assertNull(clearedState.operationMessage)
     }
 }

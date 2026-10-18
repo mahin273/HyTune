@@ -7,25 +7,38 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mahin.hytune.domain.appmanager.model.AppDetails
+import com.mahin.hytune.domain.appmanager.model.AppOperation
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -36,9 +49,51 @@ fun AppInspectionBottomSheet(
     details: AppDetails,
     sheetState: SheetState,
     onDismiss: () -> Unit,
+    onExecuteOperation: (AppOperation, Boolean) -> Unit = { _, _ -> },
+    isOperationRunning: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    var pendingConfirmationOperation by remember { mutableStateOf<AppOperation?>(null) }
+
+    if (pendingConfirmationOperation != null) {
+        val op = pendingConfirmationOperation!!
+        AlertDialog(
+            onDismissRequest = { pendingConfirmationOperation = null },
+            title = { Text(text = "Confirm ${op.displayName}") },
+            text = {
+                val warning = if (op == AppOperation.CLEAR_DATA) {
+                    "This will permanently erase all data, caches, and login states for ${details.summary.appLabel}."
+                } else if (op == AppOperation.UNINSTALL_USER_0) {
+                    "This will remove ${details.summary.appLabel} for user 0. System APKs will remain in system partition."
+                } else {
+                    "Are you sure you want to proceed with ${op.displayName} on ${details.summary.appLabel}?"
+                }
+                Text(text = warning)
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val operationToRun = op
+                        pendingConfirmationOperation = null
+                        onExecuteOperation(operationToRun, false)
+                    },
+                    colors = if (op.isDestructive) {
+                        ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    } else {
+                        ButtonDefaults.buttonColors()
+                    }
+                ) {
+                    Text(text = "Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingConfirmationOperation = null }) {
+                    Text(text = "Cancel")
+                }
+            }
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -94,9 +149,122 @@ fun AppInspectionBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Section 0: Quick Operations Bar
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Package Operations",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (isOperationRunning) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (details.summary.isEnabled) {
+                            FilledTonalButton(
+                                onClick = { onExecuteOperation(AppOperation.FREEZE, false) },
+                                enabled = !isOperationRunning,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Freeze")
+                            }
+
+                            OutlinedButton(
+                                onClick = { onExecuteOperation(AppOperation.SUSPEND, false) },
+                                enabled = !isOperationRunning,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Suspend")
+                            }
+                        } else {
+                            Button(
+                                onClick = { onExecuteOperation(AppOperation.UNFREEZE, false) },
+                                enabled = !isOperationRunning,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Unfreeze")
+                            }
+                        }
+
+                        if (details.summary.isSuspended) {
+                            Button(
+                                onClick = { onExecuteOperation(AppOperation.UNSUSPEND, false) },
+                                enabled = !isOperationRunning,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Unsuspend")
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { onExecuteOperation(AppOperation.FORCE_STOP, false) },
+                            enabled = !isOperationRunning,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Force Stop")
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { pendingConfirmationOperation = AppOperation.CLEAR_DATA },
+                            enabled = !isOperationRunning,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Clear Data")
+                        }
+
+                        OutlinedButton(
+                            onClick = { pendingConfirmationOperation = AppOperation.UNINSTALL_USER_0 },
+                            enabled = !isOperationRunning,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Uninstall (User 0)")
+                        }
+
+                        if (details.summary.isSystemApp) {
+                            OutlinedButton(
+                                onClick = { onExecuteOperation(AppOperation.REINSTALL_EXISTING, false) },
+                                enabled = !isOperationRunning,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Reinstall")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
@@ -210,10 +378,9 @@ fun AppInspectionBottomSheet(
                 if (details.permissions.isEmpty()) {
                     item {
                         Text(
-                            text = "No permissions requested by this application.",
+                            text = "No permissions requested",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 } else {
@@ -221,37 +388,28 @@ fun AppInspectionBottomSheet(
                         PermissionItemRow(perm = perm)
                     }
                 }
-
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
             }
         }
     }
 }
 
 @Composable
-private fun InfoRow(
-    label: String,
-    value: String
-) {
+private fun InfoRow(label: String, value: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Medium,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
     }
@@ -263,20 +421,23 @@ private fun ComponentBadge(
     count: Int,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    Card(
         modifier = modifier,
-        shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
         Column(
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = count.toString(),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.primary
             )
             Text(
                 text = title,

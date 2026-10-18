@@ -40,6 +40,10 @@ class AppManagerRepository @Inject constructor(
         emit(apps)
     }.flowOn(ioDispatcher)
 
+    fun invalidateCache() {
+        cachedApps = null
+    }
+
     suspend fun getAppDetails(packageName: String): Result<AppDetails> = withContext(ioDispatcher) {
         runCatching {
             val pm = context.packageManager
