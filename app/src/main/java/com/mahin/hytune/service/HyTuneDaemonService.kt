@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.ServiceCompat
 import com.mahin.hytune.data.local.datastore.AppSettingsRepository
+import com.mahin.hytune.domain.detection.ForegroundAppDetector
 import com.mahin.hytune.domain.profile.ProfileRepository
 import com.mahin.hytune.domain.safety.SafetyManager
 import com.mahin.hytune.service.model.DaemonState
@@ -45,6 +46,9 @@ class HyTuneDaemonService : Service() {
     @Inject
     lateinit var profileRepository: ProfileRepository
 
+    @Inject
+    lateinit var foregroundAppDetector: ForegroundAppDetector
+
     private var serviceScope: CoroutineScope? = null
 
     override fun onCreate() {
@@ -60,7 +64,7 @@ class HyTuneDaemonService : Service() {
             ACTION_START -> {
                 startForegroundWithNotification()
                 daemonController.updateState(DaemonState.RUNNING)
-                observeActiveProfile()
+                observeActiveProfileAndForegroundApp()
             }
             ACTION_STOP -> {
                 daemonController.updateState(DaemonState.STOPPING)
@@ -98,13 +102,24 @@ class HyTuneDaemonService : Service() {
         )
     }
 
-    private fun observeActiveProfile() {
+    private fun observeActiveProfileAndForegroundApp() {
         serviceScope?.launch {
-            profileRepository.getActiveProfile().collectLatest { profile ->
+            kotlinx.coroutines.flow.combine(
+                profileRepository.getActiveProfile(),
+                foregroundAppDetector.currentForegroundApp
+            ) { profile, app ->
+                val summary = if (app != null && !app.isHomeLauncher) {
+                    "App: ${app.packageName}"
+                } else null
                 daemonNotificationManager.updateNotification(
-                    activeProfileName = profile.name
+                    activeProfileName = profile.name,
+                    statusSummary = summary
                 )
-            }
+            }.collectLatest {}
+        }
+
+        serviceScope?.launch {
+            foregroundAppDetector.startDetectionStream().collectLatest {}
         }
     }
 
