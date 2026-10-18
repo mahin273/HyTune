@@ -3,7 +3,9 @@ package com.mahin.hytune.ui.appmanager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mahin.hytune.domain.appmanager.AppManagerRepository
+import com.mahin.hytune.domain.appmanager.AppOperationEngine
 import com.mahin.hytune.domain.appmanager.model.AppDetails
+import com.mahin.hytune.domain.appmanager.model.AppOperation
 import com.mahin.hytune.domain.appmanager.model.AppSortOrder
 import com.mahin.hytune.domain.appmanager.model.AppSummary
 import com.mahin.hytune.domain.appmanager.model.AppTypeFilter
@@ -32,12 +34,15 @@ data class AppManagerUiState(
     val isLoading: Boolean = false,
     val selectedAppDetails: AppDetails? = null,
     val isInspecting: Boolean = false,
-    val inspectionError: String? = null
+    val inspectionError: String? = null,
+    val operationInProgress: String? = null,
+    val operationMessage: String? = null
 )
 
 @HiltViewModel
 class AppManagerViewModel @Inject constructor(
     private val repository: AppManagerRepository,
+    private val operationEngine: AppOperationEngine,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
@@ -49,6 +54,8 @@ class AppManagerViewModel @Inject constructor(
     private val _selectedAppDetails = MutableStateFlow<AppDetails?>(null)
     private val _isInspecting = MutableStateFlow(false)
     private val _inspectionError = MutableStateFlow<String?>(null)
+    private val _operationInProgress = MutableStateFlow<String?>(null)
+    private val _operationMessage = MutableStateFlow<String?>(null)
 
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
     val filter: StateFlow<AppTypeFilter> = _filter.asStateFlow()
@@ -75,12 +82,20 @@ class AppManagerViewModel @Inject constructor(
         Triple(details, inspecting, error)
     }
 
+    private val operationStateFlow = combine(
+        _operationInProgress,
+        _operationMessage
+    ) { inProgress, message ->
+        Pair(inProgress, message)
+    }
+
     val uiState: StateFlow<AppManagerUiState> = combine(
         _rawApps,
         _isLoading,
         filterAndSortFlow,
-        inspectionStateFlow
-    ) { apps, loading, (query, filter, sort), (details, inspecting, error) ->
+        inspectionStateFlow,
+        operationStateFlow
+    ) { apps, loading, (query, filter, sort), (details, inspecting, error), (inProgress, message) ->
         val total = apps.size
         val userApps = apps.count { !it.isSystemApp }
         val systemApps = apps.count { it.isSystemApp }
@@ -125,7 +140,9 @@ class AppManagerViewModel @Inject constructor(
             isLoading = loading,
             selectedAppDetails = details,
             isInspecting = inspecting,
-            inspectionError = error
+            inspectionError = error,
+            operationInProgress = inProgress,
+            operationMessage = message
         )
     }.stateIn(
         scope = viewModelScope,
@@ -180,5 +197,34 @@ class AppManagerViewModel @Inject constructor(
         _selectedAppDetails.value = null
         _inspectionError.value = null
         _isInspecting.value = false
+    }
+
+    fun executeOperation(packageName: String, operation: AppOperation, keepData: Boolean = false) {
+        viewModelScope.launch(ioDispatcher) {
+            _operationInProgress.value = packageName
+            _operationMessage.value = null
+
+            val result = operationEngine.executeOperation(packageName, operation, keepData)
+            result.onSuccess { opResult ->
+                if (opResult.success) {
+                    _operationMessage.value = "${operation.displayName} succeeded for $packageName"
+                    repository.invalidateCache()
+                    loadApps(forceRefresh = true)
+                    if (_selectedAppDetails.value?.summary?.packageName == packageName) {
+                        selectAppForInspection(packageName)
+                    }
+                } else {
+                    _operationMessage.value = opResult.message ?: "${operation.displayName} failed for $packageName"
+                }
+            }.onFailure { error ->
+                _operationMessage.value = error.message ?: "${operation.displayName} failed for $packageName"
+            }
+
+            _operationInProgress.value = null
+        }
+    }
+
+    fun clearOperationMessage() {
+        _operationMessage.value = null
     }
 }
