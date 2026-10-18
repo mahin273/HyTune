@@ -149,4 +149,11 @@ class BatteryViewModelTest {
         assertTrue(state.userMessage!!.contains("1500 mA"))
         assertEquals("1500000", fakeBackend.getFile(limitNode))
     }
+
+    @Test
+    fun toggleOverlay_whenNoPermission_setsUserMessage() = runTest(testDispatcher) {
+        viewModel.toggleOverlay(true)
+        val state = viewModel.uiState.first { it.userMessage != null }
+        assertNotNull(state.userMessage)
+    }
 }

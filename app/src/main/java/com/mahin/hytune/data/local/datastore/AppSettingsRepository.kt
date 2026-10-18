@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -41,6 +42,15 @@ class AppSettingsRepository @Inject constructor(
         val CHARGE_LIMIT_PERCENT = intPreferencesKey("charge_limit_percent")
         val CHARGE_CURRENT_LIMIT_MA = intPreferencesKey("charge_current_limit_ma")
         val BYPASS_CHARGING_ENABLED = booleanPreferencesKey("bypass_charging_enabled")
+        val OVERLAY_COMPACT_MODE = booleanPreferencesKey("overlay_compact_mode")
+        val OVERLAY_OPACITY = floatPreferencesKey("overlay_opacity")
+        val OVERLAY_SHOW_CPU = booleanPreferencesKey("overlay_show_cpu")
+        val OVERLAY_SHOW_GPU = booleanPreferencesKey("overlay_show_gpu")
+        val OVERLAY_SHOW_BATTERY = booleanPreferencesKey("overlay_show_battery")
+        val OVERLAY_SHOW_TEMP = booleanPreferencesKey("overlay_show_temp")
+        val OVERLAY_SHOW_RAM = booleanPreferencesKey("overlay_show_ram")
+        val OVERLAY_POS_X = intPreferencesKey("overlay_pos_x")
+        val OVERLAY_POS_Y = intPreferencesKey("overlay_pos_y")
     }
 
     val settings: Flow<AppSettings> = dataStore.data
@@ -72,7 +82,16 @@ class AppSettingsRepository @Inject constructor(
                 chargeLimitEnabled = preferences[PreferencesKeys.CHARGE_LIMIT_ENABLED] ?: false,
                 chargeLimitPercent = preferences[PreferencesKeys.CHARGE_LIMIT_PERCENT] ?: 80,
                 chargeCurrentLimitMa = preferences[PreferencesKeys.CHARGE_CURRENT_LIMIT_MA] ?: 0,
-                bypassChargingEnabled = preferences[PreferencesKeys.BYPASS_CHARGING_ENABLED] ?: false
+                bypassChargingEnabled = preferences[PreferencesKeys.BYPASS_CHARGING_ENABLED] ?: false,
+                overlayCompactMode = preferences[PreferencesKeys.OVERLAY_COMPACT_MODE] ?: true,
+                overlayOpacity = preferences[PreferencesKeys.OVERLAY_OPACITY] ?: 0.85f,
+                overlayShowCpu = preferences[PreferencesKeys.OVERLAY_SHOW_CPU] ?: true,
+                overlayShowGpu = preferences[PreferencesKeys.OVERLAY_SHOW_GPU] ?: true,
+                overlayShowBattery = preferences[PreferencesKeys.OVERLAY_SHOW_BATTERY] ?: true,
+                overlayShowTemp = preferences[PreferencesKeys.OVERLAY_SHOW_TEMP] ?: true,
+                overlayShowRam = preferences[PreferencesKeys.OVERLAY_SHOW_RAM] ?: true,
+                overlayPositionX = preferences[PreferencesKeys.OVERLAY_POS_X] ?: 100,
+                overlayPositionY = preferences[PreferencesKeys.OVERLAY_POS_Y] ?: 200
             )
         }
 
@@ -197,6 +216,41 @@ class AppSettingsRepository @Inject constructor(
     suspend fun setBypassChargingEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.BYPASS_CHARGING_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setOverlayCompactMode(compact: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.OVERLAY_COMPACT_MODE] = compact
+        }
+    }
+
+    suspend fun setOverlayOpacity(opacity: Float) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.OVERLAY_OPACITY] = opacity
+        }
+    }
+
+    suspend fun setOverlayPosition(x: Int, y: Int) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.OVERLAY_POS_X] = x
+            preferences[PreferencesKeys.OVERLAY_POS_Y] = y
+        }
+    }
+
+    suspend fun setOverlayMetricVisibility(
+        showCpu: Boolean,
+        showGpu: Boolean,
+        showBattery: Boolean,
+        showTemp: Boolean,
+        showRam: Boolean
+    ) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.OVERLAY_SHOW_CPU] = showCpu
+            preferences[PreferencesKeys.OVERLAY_SHOW_GPU] = showGpu
+            preferences[PreferencesKeys.OVERLAY_SHOW_BATTERY] = showBattery
+            preferences[PreferencesKeys.OVERLAY_SHOW_TEMP] = showTemp
+            preferences[PreferencesKeys.OVERLAY_SHOW_RAM] = showRam
         }
     }
 }
