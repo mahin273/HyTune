@@ -19,7 +19,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mahin.hytune.ui.battery.BatteryCard
 import com.mahin.hytune.ui.battery.BatteryViewModel
+import com.mahin.hytune.ui.battery.ChargeControlCard
 import com.mahin.hytune.ui.battery.ChargingSessionsCard
+import com.mahin.hytune.ui.thermal.ThermalZonesCard
 
 @Composable
 fun MonitorScreen(
@@ -38,6 +40,22 @@ fun MonitorScreen(
     ) {
         // Battery Real-time Telemetry
         BatteryCard(batteryState = batteryUiState.batteryState)
+
+        // Charge Control & Bypass Charging
+        ChargeControlCard(
+            status = batteryUiState.chargeStatus,
+            config = batteryUiState.chargeConfig,
+            onBypassToggle = { batteryViewModel.setBypassCharging(it) },
+            onCurrentLimitChange = { batteryViewModel.setChargeCurrentLimit(it) },
+            onLimitConfigChange = { enabled, percent -> batteryViewModel.setChargeLimitConfig(enabled, percent) }
+        )
+
+        // Thermal Zones & Throttling
+        ThermalZonesCard(
+            snapshot = batteryUiState.thermalSnapshot,
+            throttleEvents = batteryUiState.throttleEvents,
+            onClearEvents = { batteryViewModel.clearThrottleHistory() }
+        )
 
         // Historical Charging Sessions
         ChargingSessionsCard(
