@@ -11,6 +11,7 @@ import com.mahin.hytune.data.local.db.dao.AppRuleDao
 import com.mahin.hytune.data.local.db.dao.ChargingSessionDao
 import com.mahin.hytune.data.local.db.dao.FreezeGroupDao
 import com.mahin.hytune.data.local.db.dao.ProfileDao
+import com.mahin.hytune.data.local.db.dao.ThermalThrottleDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -32,7 +33,10 @@ object DatabaseModule {
             HyTuneDatabase::class.java,
             HyTuneDatabase.DATABASE_NAME
         )
-            .addMigrations(HyTuneDatabase.MIGRATION_1_2)
+            .addMigrations(
+                HyTuneDatabase.MIGRATION_1_2,
+                HyTuneDatabase.MIGRATION_2_3
+            )
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -48,6 +52,9 @@ object DatabaseModule {
 
     @Provides
     fun provideFreezeGroupDao(database: HyTuneDatabase): FreezeGroupDao = database.freezeGroupDao()
+
+    @Provides
+    fun provideThermalThrottleDao(database: HyTuneDatabase): ThermalThrottleDao = database.thermalThrottleDao()
 
     @Provides
     @Singleton

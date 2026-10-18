@@ -37,6 +37,10 @@ class AppSettingsRepository @Inject constructor(
         val GRACEFUL_SHUTDOWN_OCCURRED = booleanPreferencesKey("graceful_shutdown_occurred")
         val DAEMON_SERVICE_ENABLED = booleanPreferencesKey("daemon_service_enabled")
         val DAEMON_NOTIFICATION_DETAILS_ENABLED = booleanPreferencesKey("daemon_notification_details_enabled")
+        val CHARGE_LIMIT_ENABLED = booleanPreferencesKey("charge_limit_enabled")
+        val CHARGE_LIMIT_PERCENT = intPreferencesKey("charge_limit_percent")
+        val CHARGE_CURRENT_LIMIT_MA = intPreferencesKey("charge_current_limit_ma")
+        val BYPASS_CHARGING_ENABLED = booleanPreferencesKey("bypass_charging_enabled")
     }
 
     val settings: Flow<AppSettings> = dataStore.data
@@ -64,7 +68,11 @@ class AppSettingsRepository @Inject constructor(
                 baselineSnapshotJson = preferences[PreferencesKeys.BASELINE_SNAPSHOT_JSON],
                 gracefulShutdownOccurred = preferences[PreferencesKeys.GRACEFUL_SHUTDOWN_OCCURRED] ?: false,
                 daemonServiceEnabled = preferences[PreferencesKeys.DAEMON_SERVICE_ENABLED] ?: false,
-                daemonNotificationDetailsEnabled = preferences[PreferencesKeys.DAEMON_NOTIFICATION_DETAILS_ENABLED] ?: true
+                daemonNotificationDetailsEnabled = preferences[PreferencesKeys.DAEMON_NOTIFICATION_DETAILS_ENABLED] ?: true,
+                chargeLimitEnabled = preferences[PreferencesKeys.CHARGE_LIMIT_ENABLED] ?: false,
+                chargeLimitPercent = preferences[PreferencesKeys.CHARGE_LIMIT_PERCENT] ?: 80,
+                chargeCurrentLimitMa = preferences[PreferencesKeys.CHARGE_CURRENT_LIMIT_MA] ?: 0,
+                bypassChargingEnabled = preferences[PreferencesKeys.BYPASS_CHARGING_ENABLED] ?: false
             )
         }
 
@@ -165,6 +173,30 @@ class AppSettingsRepository @Inject constructor(
     suspend fun setDaemonNotificationDetailsEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.DAEMON_NOTIFICATION_DETAILS_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setChargeLimitEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.CHARGE_LIMIT_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setChargeLimitPercent(percent: Int) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.CHARGE_LIMIT_PERCENT] = percent
+        }
+    }
+
+    suspend fun setChargeCurrentLimitMa(limitMa: Int) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.CHARGE_CURRENT_LIMIT_MA] = limitMa
+        }
+    }
+
+    suspend fun setBypassChargingEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.BYPASS_CHARGING_ENABLED] = enabled
         }
     }
 }

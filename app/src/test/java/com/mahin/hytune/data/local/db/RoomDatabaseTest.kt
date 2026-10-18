@@ -30,6 +30,7 @@ class RoomDatabaseTest {
     private lateinit var profileDao: ProfileDao
     private lateinit var appRuleDao: AppRuleDao
     private lateinit var chargingSessionDao: ChargingSessionDao
+    private lateinit var thermalThrottleDao: com.mahin.hytune.data.local.db.dao.ThermalThrottleDao
 
     @Before
     fun setUp() {
@@ -40,6 +41,7 @@ class RoomDatabaseTest {
         profileDao = db.profileDao()
         appRuleDao = db.appRuleDao()
         chargingSessionDao = db.chargingSessionDao()
+        thermalThrottleDao = db.thermalThrottleDao()
     }
 
     @After
@@ -150,5 +152,38 @@ class RoomDatabaseTest {
         val recent = chargingSessionDao.getRecentSessions(limit = 1).first()
         assertEquals(1, recent.size)
         assertEquals(3000L, recent.first().startTimestampEpochMs)
+    }
+
+    @Test
+    fun thermalThrottleDao_insertAndQueryRecent() = runTest {
+        val e1 = com.mahin.hytune.data.local.db.entity.ThermalThrottleEventEntity(
+            timestampEpochMs = 1000L,
+            zoneName = "cpu-1-0-usr",
+            temperatureC = 82.5f,
+            coolingDeviceState = "thermal-cpufreq-0:2",
+            triggerReason = "CPU thermal throttle"
+        )
+        val e2 = com.mahin.hytune.data.local.db.entity.ThermalThrottleEventEntity(
+            timestampEpochMs = 2000L,
+            zoneName = "gpuss-0-usr",
+            temperatureC = 78.0f,
+            coolingDeviceState = "thermal-devfreq-0:1",
+            triggerReason = "GPU thermal throttle"
+        )
+
+        thermalThrottleDao.insertEvent(e1)
+        thermalThrottleDao.insertEvent(e2)
+
+        val recent = thermalThrottleDao.getRecentEvents(limit = 1).first()
+        assertEquals(1, recent.size)
+        assertEquals(2000L, recent.first().timestampEpochMs)
+        assertEquals("gpuss-0-usr", recent.first().zoneName)
+
+        val all = thermalThrottleDao.getAllEvents().first()
+        assertEquals(2, all.size)
+
+        thermalThrottleDao.clearAllEvents()
+        val cleared = thermalThrottleDao.getAllEvents().first()
+        assertTrue(cleared.isEmpty())
     }
 }

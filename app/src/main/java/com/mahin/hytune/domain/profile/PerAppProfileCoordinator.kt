@@ -35,6 +35,7 @@ class PerAppProfileCoordinator @Inject constructor(
     private val gameClassifier: GameClassifier,
     private val displayController: DisplayRefreshRateController,
     private val dndController: DndController,
+    private val chargeControlEngine: com.mahin.hytune.domain.battery.ChargeControlEngine? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
@@ -46,6 +47,7 @@ class PerAppProfileCoordinator @Inject constructor(
     private var originalMinRefreshRate: Float? = null
     private var originalZenMode: String? = null
     private var activePackageName: String? = null
+    private var perAppBypassActive: Boolean = false
 
     suspend fun handleForegroundApp(info: ForegroundInfo): Unit = withContext(ioDispatcher) {
         val packageName = info.packageName
@@ -80,7 +82,8 @@ class PerAppProfileCoordinator @Inject constructor(
                 profileId = rule.profileId,
                 isGame = rule.isGame,
                 refreshRate = rule.targetRefreshRate,
-                dnd = rule.dndEnabled
+                dnd = rule.dndEnabled,
+                bypassCharging = rule.bypassChargingEnabled
             )
         } else if (gameClassifier.isGame(packageName)) {
             applyPerAppRule(
@@ -88,7 +91,8 @@ class PerAppProfileCoordinator @Inject constructor(
                 profileId = BuiltInProfiles.PERFORMANCE.id,
                 isGame = true,
                 refreshRate = null,
-                dnd = false
+                dnd = false,
+                bypassCharging = false
             )
         } else {
             if (_activePerAppState.value != null) {
@@ -102,7 +106,8 @@ class PerAppProfileCoordinator @Inject constructor(
         profileId: String,
         isGame: Boolean,
         refreshRate: Int?,
-        dnd: Boolean
+        dnd: Boolean,
+        bypassCharging: Boolean = false
     ) {
         if (baseProfileId == null) {
             baseProfileId = profileRepository.getActiveProfileId().first()
@@ -130,6 +135,14 @@ class PerAppProfileCoordinator @Inject constructor(
             dndController.restoreDnd(originalZenMode)
         }
 
+        if (bypassCharging) {
+            chargeControlEngine?.setBypassCharging(true)
+            perAppBypassActive = true
+        } else if (perAppBypassActive) {
+            chargeControlEngine?.setBypassCharging(false)
+            perAppBypassActive = false
+        }
+
         activePackageName = packageName
         _activePerAppState.value = PerAppState(
             packageName = packageName,
@@ -154,6 +167,11 @@ class PerAppProfileCoordinator @Inject constructor(
 
         displayController.restoreRefreshRate(originalPeakRefreshRate, originalMinRefreshRate)
         dndController.restoreDnd(originalZenMode)
+
+        if (perAppBypassActive) {
+            chargeControlEngine?.setBypassCharging(false)
+            perAppBypassActive = false
+        }
 
         baseProfileId = null
         originalPeakRefreshRate = null

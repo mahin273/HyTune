@@ -70,7 +70,16 @@ class BatteryViewModelTest {
         engine = BatteryEngine(context, fakeBackend, testDispatcher)
         tracker = ChargingSessionTracker(context, dao, engine, testDispatcher)
         repository = BatteryRepository(engine, dao, tracker, testDispatcher)
-        viewModel = BatteryViewModel(repository)
+        val chargeEngine = com.mahin.hytune.domain.battery.ChargeControlEngine(fakeBackend, testDispatcher)
+        val thermalDao = db.thermalThrottleDao()
+        val thermalEngine = com.mahin.hytune.domain.thermal.ThermalEngine(fakeBackend, testDispatcher)
+        val thermalRepo = com.mahin.hytune.domain.thermal.ThermalRepository(thermalEngine, thermalDao, testDispatcher)
+        viewModel = BatteryViewModel(
+            repository = repository,
+            chargeControlEngine = chargeEngine,
+            thermalRepository = thermalRepo,
+            appSettingsRepository = null
+        )
     }
 
     @After
@@ -117,5 +126,27 @@ class BatteryViewModelTest {
         assertNotNull(state.userMessage)
         assertTrue(state.userMessage!!.contains("cleared"))
         assertTrue(state.sessions.isEmpty())
+    }
+
+    @Test
+    fun setBypassCharging_whenRoot_updatesMessage() = runTest(testDispatcher) {
+        val node = "/sys/class/power_supply/battery/charging_enabled"
+        fakeBackend.setFile(node, "1\n")
+
+        viewModel.setBypassCharging(true)
+        val state = viewModel.uiState.first { it.userMessage != null }
+        assertTrue(state.userMessage!!.contains("enabled"))
+        assertEquals("0", fakeBackend.getFile(node))
+    }
+
+    @Test
+    fun setChargeCurrentLimit_updatesLimitNodeAndMessage() = runTest(testDispatcher) {
+        val limitNode = "/sys/class/power_supply/battery/constant_charge_current_max"
+        fakeBackend.setFile(limitNode, "2000000\n")
+
+        viewModel.setChargeCurrentLimit(1500)
+        val state = viewModel.uiState.first { it.userMessage != null }
+        assertTrue(state.userMessage!!.contains("1500 mA"))
+        assertEquals("1500000", fakeBackend.getFile(limitNode))
     }
 }

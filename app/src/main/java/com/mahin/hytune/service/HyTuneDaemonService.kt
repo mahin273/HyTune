@@ -59,7 +59,18 @@ class HyTuneDaemonService : Service() {
     @Inject
     lateinit var chargingSessionTracker: com.mahin.hytune.domain.battery.ChargingSessionTracker
 
+    @Inject
+    lateinit var chargeControlEngine: com.mahin.hytune.domain.battery.ChargeControlEngine
+
+    @Inject
+    lateinit var thermalRepository: com.mahin.hytune.domain.thermal.ThermalRepository
+
+    @Inject
+    lateinit var batteryRepository: com.mahin.hytune.domain.battery.BatteryRepository
+
     private var serviceScope: CoroutineScope? = null
+    private var thermalMonitorJob: kotlinx.coroutines.Job? = null
+    private var chargeGuardJob: kotlinx.coroutines.Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -77,6 +88,7 @@ class HyTuneDaemonService : Service() {
                 autoFreezeManager.startMonitoring()
                 chargingSessionTracker.startMonitoring()
                 observeActiveProfileAndForegroundApp()
+                startThermalAndChargeMonitoring()
             }
             ACTION_STOP -> {
                 daemonController.updateState(DaemonState.STOPPING)
@@ -137,6 +149,49 @@ class HyTuneDaemonService : Service() {
         }
     }
 
+    private fun startThermalAndChargeMonitoring() {
+        thermalMonitorJob = serviceScope?.launch {
+            var wasThrottling = false
+            thermalRepository.observeThermalSnapshot(2000L).collectLatest { snapshot ->
+                if (snapshot.isThrottling && !wasThrottling) {
+                    wasThrottling = true
+                    val hottest = snapshot.hottestZone
+                    val cdevSummary = snapshot.coolingDevices
+                        .filter { it.isThrottling }
+                        .joinToString { "${it.name}:${it.curState}" }
+                        .ifEmpty { "Trip point exceeded" }
+
+                    thermalRepository.logThrottleEvent(
+                        com.mahin.hytune.domain.thermal.model.ThermalThrottleEvent(
+                            timestampEpochMs = System.currentTimeMillis(),
+                            zoneName = hottest?.name ?: "Unknown",
+                            temperatureC = hottest?.tempC ?: 0f,
+                            coolingDeviceState = cdevSummary,
+                            triggerReason = "Thermal throttle threshold exceeded"
+                        )
+                    )
+                } else if (!snapshot.isThrottling) {
+                    wasThrottling = false
+                }
+            }
+        }
+
+        chargeGuardJob = serviceScope?.launch {
+            kotlinx.coroutines.flow.combine(
+                appSettingsRepository.settings,
+                batteryRepository.getBatteryStateFlow(2000L)
+            ) { settings, battery ->
+                if (settings.chargeLimitEnabled) {
+                    if (battery.levelPercent >= settings.chargeLimitPercent) {
+                        chargeControlEngine.setBypassCharging(true)
+                    } else if (battery.levelPercent <= (settings.chargeLimitPercent - 3)) {
+                        chargeControlEngine.setBypassCharging(false)
+                    }
+                }
+            }.collectLatest {}
+        }
+    }
+
     private fun switchProfile(profileId: String) {
         serviceScope?.launch {
             val profile = profileRepository.getProfileById(profileId).getOrNull()
@@ -150,6 +205,10 @@ class HyTuneDaemonService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        thermalMonitorJob?.cancel()
+        thermalMonitorJob = null
+        chargeGuardJob?.cancel()
+        chargeGuardJob = null
         serviceScope?.cancel()
         serviceScope = null
         autoFreezeManager.stopMonitoring()

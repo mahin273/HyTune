@@ -16,5 +16,9 @@ data class AppSettings(
     val baselineSnapshotJson: String? = null,
     val gracefulShutdownOccurred: Boolean = false,
     val daemonServiceEnabled: Boolean = false,
-    val daemonNotificationDetailsEnabled: Boolean = true
+    val daemonNotificationDetailsEnabled: Boolean = true,
+    val chargeLimitEnabled: Boolean = false,
+    val chargeLimitPercent: Int = 80,
+    val chargeCurrentLimitMa: Int = 0,
+    val bypassChargingEnabled: Boolean = false
 )
