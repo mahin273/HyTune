@@ -1,5 +1,8 @@
 package com.mahin.hytune.domain.engine.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class HardwareStateSnapshot(
     val timestampEpochMs: Long = System.currentTimeMillis(),
     val cpuGovernors: Map<Int, String> = emptyMap(),
