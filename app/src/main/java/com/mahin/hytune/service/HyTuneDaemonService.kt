@@ -8,6 +8,7 @@ import android.os.IBinder
 import androidx.core.app.ServiceCompat
 import com.mahin.hytune.data.local.datastore.AppSettingsRepository
 import com.mahin.hytune.domain.detection.ForegroundAppDetector
+import com.mahin.hytune.domain.profile.PerAppProfileCoordinator
 import com.mahin.hytune.domain.profile.ProfileRepository
 import com.mahin.hytune.domain.safety.SafetyManager
 import com.mahin.hytune.service.model.DaemonState
@@ -48,6 +49,9 @@ class HyTuneDaemonService : Service() {
 
     @Inject
     lateinit var foregroundAppDetector: ForegroundAppDetector
+
+    @Inject
+    lateinit var perAppProfileCoordinator: PerAppProfileCoordinator
 
     private var serviceScope: CoroutineScope? = null
 
@@ -119,7 +123,7 @@ class HyTuneDaemonService : Service() {
         }
 
         serviceScope?.launch {
-            foregroundAppDetector.startDetectionStream().collectLatest {}
+            perAppProfileCoordinator.startObserving().collectLatest {}
         }
     }
 

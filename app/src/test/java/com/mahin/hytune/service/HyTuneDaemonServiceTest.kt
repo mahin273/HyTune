@@ -152,6 +152,24 @@ class HyTuneDaemonServiceTest {
             ioDispatcher = testDispatcher
         )
         service.foregroundAppDetector = detector
+
+        val appRuleRepository = com.mahin.hytune.domain.profile.AppRuleRepository(db.appRuleDao(), testDispatcher)
+        val gameClassifier = com.mahin.hytune.domain.detection.GameClassifier(context, db.appRuleDao())
+        val displayController = com.mahin.hytune.domain.display.DisplayRefreshRateController(privilegeManager)
+        val dndController = com.mahin.hytune.domain.notification.DndController(privilegeManager)
+        val coordinator = com.mahin.hytune.domain.profile.PerAppProfileCoordinator(
+            context = context,
+            foregroundAppDetector = detector,
+            profileRepository = profileRepository,
+            profileEngine = profileEngine,
+            appRuleRepository = appRuleRepository,
+            appSettingsRepository = appSettingsRepository,
+            gameClassifier = gameClassifier,
+            displayController = displayController,
+            dndController = dndController,
+            ioDispatcher = testDispatcher
+        )
+        service.perAppProfileCoordinator = coordinator
     }
 
     @After
