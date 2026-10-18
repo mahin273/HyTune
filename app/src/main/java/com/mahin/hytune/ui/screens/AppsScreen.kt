@@ -52,7 +52,7 @@ fun AppsScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("App Manager", "Per-App Profiles")
+    val tabs = listOf("App Manager", "Per-App Profiles", "Processes")
 
     Column(
         modifier = modifier.fillMaxSize()
@@ -79,6 +79,7 @@ fun AppsScreen(
         when (selectedTabIndex) {
             0 -> AppManagerTab()
             1 -> PerAppProfilesTab()
+            2 -> com.mahin.hytune.ui.process.ProcessManagerTab()
         }
     }
 }
