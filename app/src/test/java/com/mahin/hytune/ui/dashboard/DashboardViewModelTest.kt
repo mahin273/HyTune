@@ -81,14 +81,14 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun testInitialLoadingAndHardwareProbe() = runTest {
+    fun testInitialLoadingAndHardwareProbe() = runTest(testDispatcher) {
         val state = viewModel.uiState.value
         assertNotNull(state.hardwareSummary)
         assertTrue(state.hardwareSummary!!.socName.contains("SM8550") || state.hardwareSummary!!.totalCores > 0)
     }
 
     @Test
-    fun testTelemetryFlowUpdatesLatestSnapshotAndLoading() = runTest {
+    fun testTelemetryFlowUpdatesLatestSnapshotAndLoading() = runTest(testDispatcher) {
         val snapshot = samplerEngine.sampleOnce()
         viewModel.processSnapshot(snapshot)
 
@@ -99,7 +99,7 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun testRollingHistoryBuffersAreBoundedToMaxPoints() = runTest {
+    fun testRollingHistoryBuffersAreBoundedToMaxPoints() = runTest(testDispatcher) {
         repeat(35) { i ->
             fakePrivilegeBackend.setFile(
                 "/proc/stat",
@@ -118,7 +118,7 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun testStartSamplingStreamCollectsSnapshots() = runTest {
+    fun testStartSamplingStreamCollectsSnapshots() = runTest(testDispatcher) {
         viewModel.startSampling(intervalMs = 10L)
         testScheduler.advanceTimeBy(15L)
         viewModel.stopSampling()
@@ -128,14 +128,14 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun testProfileSelectionUpdatesSettings() = runTest {
+    fun testProfileSelectionUpdatesSettings() = runTest(testDispatcher) {
         viewModel.onProfileSelected("perf")
         val currentSettings = settingsRepository.settings.first { it.activeProfileId == "perf" }
         assertEquals("perf", currentSettings.activeProfileId)
     }
 
     @Test
-    fun testProfilesFromDaoAreReflectedInState() = runTest {
+    fun testProfilesFromDaoAreReflectedInState() = runTest(testDispatcher) {
         val testProfile = ProfileEntity(
             id = "custom_1",
             name = "Extreme Gaming",

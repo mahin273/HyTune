@@ -27,18 +27,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.mahin.hytune.service.model.DaemonState
+import com.mahin.hytune.ui.daemon.DaemonViewModel
 import com.mahin.hytune.ui.safety.SafetyViewModel
 
 @Composable
 fun MoreScreen(
     safetyViewModel: SafetyViewModel = hiltViewModel(),
+    daemonViewModel: DaemonViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
     val safetyState by safetyViewModel.safetyState.collectAsState()
     val isPanicRestoring by safetyViewModel.isPanicRestoring.collectAsState()
     val statusMessage by safetyViewModel.statusMessage.collectAsState()
+
+    val daemonState by daemonViewModel.daemonState.collectAsState()
+    val isBatteryOptimizationIgnored by daemonViewModel.isBatteryOptimizationIgnored.collectAsState()
 
     var showPanicConfirmDialog by remember { mutableStateOf(false) }
 
@@ -49,6 +57,105 @@ fun MoreScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Daemon Foreground Service Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = when (daemonState) {
+                    DaemonState.RUNNING -> MaterialTheme.colorScheme.primaryContainer
+                    DaemonState.STARTING, DaemonState.STOPPING -> MaterialTheme.colorScheme.secondaryContainer
+                    DaemonState.STOPPED -> MaterialTheme.colorScheme.surfaceContainerHigh
+                }
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Background Daemon Service",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = when (daemonState) {
+                                DaemonState.RUNNING -> MaterialTheme.colorScheme.onPrimaryContainer
+                                else -> MaterialTheme.colorScheme.onSurface
+                            }
+                        )
+                        Text(
+                            text = "Status: ${daemonState.name}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = when (daemonState) {
+                                DaemonState.RUNNING -> MaterialTheme.colorScheme.onPrimaryContainer
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+
+                    Switch(
+                        checked = daemonState == DaemonState.RUNNING || daemonState == DaemonState.STARTING,
+                        onCheckedChange = { isChecked ->
+                            daemonViewModel.toggleDaemon(isChecked)
+                        }
+                    )
+                }
+
+                Text(
+                    text = "Runs a persistent foreground service with ongoing notification to maintain profile enforcement, thermal polling, and per-app switching across app suspension.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = when (daemonState) {
+                        DaemonState.RUNNING -> MaterialTheme.colorScheme.onPrimaryContainer
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+
+                if (!isBatteryOptimizationIgnored) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Battery Optimization Active",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                text = "Android Doze may suspend daemon background operations when the screen is turned off. Whitelisting HyTune ensures uninterrupted hardware control.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Button(
+                                onClick = {
+                                    try {
+                                        context.startActivity(daemonViewModel.createRequestIgnoreBatteryOptimizationsIntent())
+                                    } catch (_: Exception) {
+                                        // Ignore activity launch issues on restricted environments
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Text("Exempt App from Doze")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Safety & Panic Recovery Card
         Card(
             modifier = Modifier.fillMaxWidth(),
