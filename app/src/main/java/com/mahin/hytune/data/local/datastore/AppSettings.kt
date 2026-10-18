@@ -20,5 +20,14 @@ data class AppSettings(
     val chargeLimitEnabled: Boolean = false,
     val chargeLimitPercent: Int = 80,
     val chargeCurrentLimitMa: Int = 0,
-    val bypassChargingEnabled: Boolean = false
+    val bypassChargingEnabled: Boolean = false,
+    val overlayCompactMode: Boolean = true,
+    val overlayOpacity: Float = 0.85f,
+    val overlayShowCpu: Boolean = true,
+    val overlayShowGpu: Boolean = true,
+    val overlayShowBattery: Boolean = true,
+    val overlayShowTemp: Boolean = true,
+    val overlayShowRam: Boolean = true,
+    val overlayPositionX: Int = 100,
+    val overlayPositionY: Int = 200
 )

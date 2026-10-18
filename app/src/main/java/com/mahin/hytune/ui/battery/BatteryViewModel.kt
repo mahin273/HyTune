@@ -9,6 +9,8 @@ import com.mahin.hytune.domain.battery.model.BatteryState
 import com.mahin.hytune.domain.battery.model.ChargeControlConfig
 import com.mahin.hytune.domain.battery.model.ChargeControlStatus
 import com.mahin.hytune.domain.battery.model.ChargingSession
+import com.mahin.hytune.domain.overlay.FloatingOverlayManager
+import com.mahin.hytune.domain.overlay.model.OverlayConfig
 import com.mahin.hytune.domain.thermal.ThermalRepository
 import com.mahin.hytune.domain.thermal.model.ThermalSnapshot
 import com.mahin.hytune.domain.thermal.model.ThermalThrottleEvent
@@ -30,6 +32,9 @@ data class BatteryUiState(
     val chargeConfig: ChargeControlConfig = ChargeControlConfig(),
     val thermalSnapshot: ThermalSnapshot = ThermalSnapshot(),
     val throttleEvents: List<ThermalThrottleEvent> = emptyList(),
+    val overlayConfig: OverlayConfig = OverlayConfig(),
+    val isOverlayShowing: Boolean = false,
+    val canDrawOverlays: Boolean = false,
     val isLoading: Boolean = false,
     val userMessage: String? = null
 )
@@ -39,7 +44,8 @@ class BatteryViewModel @Inject constructor(
     private val repository: BatteryRepository,
     private val chargeControlEngine: ChargeControlEngine? = null,
     private val thermalRepository: ThermalRepository? = null,
-    private val appSettingsRepository: AppSettingsRepository? = null
+    private val appSettingsRepository: AppSettingsRepository? = null,
+    private val floatingOverlayManager: FloatingOverlayManager? = null
 ) : ViewModel() {
 
     private val _userMessage = MutableStateFlow<String?>(null)
@@ -57,11 +63,11 @@ class BatteryViewModel @Inject constructor(
         val chargeConfig: ChargeControlConfig
     )
 
-    private data class ThermalGroup(
+    private data class TelemetryGroup(
         val thermalSnapshot: ThermalSnapshot,
         val throttleEvents: List<ThermalThrottleEvent>,
-        val isLoading: Boolean,
-        val userMessage: String?
+        val overlayConfig: OverlayConfig,
+        val isOverlayShowing: Boolean
     )
 
     private val chargeConfigFlow = appSettingsRepository?.settings?.let { settingsFlow ->
@@ -77,6 +83,8 @@ class BatteryViewModel @Inject constructor(
 
     private val thermalSnapshotFlow = thermalRepository?.observeThermalSnapshot(1000L) ?: flowOf(ThermalSnapshot())
     private val throttleEventsFlow = thermalRepository?.observeRecentThrottleEvents(20) ?: flowOf(emptyList())
+    private val overlayConfigFlow = floatingOverlayManager?.config ?: flowOf(OverlayConfig())
+    private val overlayShowingFlow = floatingOverlayManager?.isShowing ?: flowOf(false)
 
     val uiState: StateFlow<BatteryUiState> = combine(
         combine(
@@ -90,12 +98,15 @@ class BatteryViewModel @Inject constructor(
         combine(
             thermalSnapshotFlow,
             throttleEventsFlow,
-            _isLoading,
-            _userMessage
-        ) { thermal, throttles, loading, message ->
-            ThermalGroup(thermal, throttles, loading, message)
+            overlayConfigFlow,
+            overlayShowingFlow
+        ) { thermal, throttles, overlayConfig, overlayShowing ->
+            TelemetryGroup(thermal, throttles, overlayConfig, overlayShowing)
+        },
+        combine(_isLoading, _userMessage) { loading, message ->
+            Pair(loading, message)
         }
-    ) { bg, tg ->
+    ) { bg, tg, uiMisc ->
         BatteryUiState(
             batteryState = bg.batteryState,
             sessions = bg.sessions,
@@ -103,14 +114,66 @@ class BatteryViewModel @Inject constructor(
             chargeConfig = bg.chargeConfig,
             thermalSnapshot = tg.thermalSnapshot,
             throttleEvents = tg.throttleEvents,
-            isLoading = tg.isLoading,
-            userMessage = tg.userMessage
+            overlayConfig = tg.overlayConfig,
+            isOverlayShowing = tg.isOverlayShowing,
+            canDrawOverlays = floatingOverlayManager?.canDrawOverlays() ?: false,
+            isLoading = uiMisc.first,
+            userMessage = uiMisc.second
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = BatteryUiState()
+        initialValue = BatteryUiState(canDrawOverlays = floatingOverlayManager?.canDrawOverlays() ?: false)
     )
+
+    fun canDrawOverlays(): Boolean {
+        return floatingOverlayManager?.canDrawOverlays() ?: false
+    }
+
+    fun toggleOverlay(enable: Boolean) {
+        viewModelScope.launch {
+            if (floatingOverlayManager == null) {
+                _userMessage.value = "Overlay manager not available"
+                return@launch
+            }
+            if (!floatingOverlayManager.canDrawOverlays()) {
+                _userMessage.value = "Overlay permission required"
+                return@launch
+            }
+            if (enable) {
+                val shown = floatingOverlayManager.showOverlay()
+                if (!shown) {
+                    _userMessage.value = "Failed to display overlay"
+                }
+            } else {
+                floatingOverlayManager.hideOverlay()
+            }
+        }
+    }
+
+    fun setOverlayCompactMode(compact: Boolean) {
+        viewModelScope.launch {
+            appSettingsRepository?.setOverlayCompactMode(compact)
+        }
+    }
+
+    fun setOverlayOpacity(opacity: Float) {
+        viewModelScope.launch {
+            appSettingsRepository?.setOverlayOpacity(opacity)
+        }
+    }
+
+    fun setOverlayMetricVisibility(
+        cpu: Boolean,
+        gpu: Boolean,
+        batt: Boolean,
+        temp: Boolean,
+        ram: Boolean
+    ) {
+        viewModelScope.launch {
+            appSettingsRepository?.setOverlayMetricVisibility(cpu, gpu, batt, temp, ram)
+        }
+    }
 
     fun refreshChargeStatus() {
         if (chargeControlEngine == null) return

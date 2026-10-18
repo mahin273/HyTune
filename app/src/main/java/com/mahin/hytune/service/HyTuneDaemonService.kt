@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -68,6 +69,9 @@ class HyTuneDaemonService : Service() {
     @Inject
     lateinit var batteryRepository: com.mahin.hytune.domain.battery.BatteryRepository
 
+    @Inject
+    lateinit var floatingOverlayManager: com.mahin.hytune.domain.overlay.FloatingOverlayManager
+
     private var serviceScope: CoroutineScope? = null
     private var thermalMonitorJob: kotlinx.coroutines.Job? = null
     private var chargeGuardJob: kotlinx.coroutines.Job? = null
@@ -89,6 +93,7 @@ class HyTuneDaemonService : Service() {
                 chargingSessionTracker.startMonitoring()
                 observeActiveProfileAndForegroundApp()
                 startThermalAndChargeMonitoring()
+                startOverlayIfConfigured()
             }
             ACTION_STOP -> {
                 daemonController.updateState(DaemonState.STOPPING)
@@ -202,9 +207,19 @@ class HyTuneDaemonService : Service() {
         }
     }
 
+    private fun startOverlayIfConfigured() {
+        serviceScope?.launch {
+            val settings = appSettingsRepository.settings.first()
+            if (settings.floatingMonitorEnabled && floatingOverlayManager.canDrawOverlays()) {
+                floatingOverlayManager.showOverlay()
+            }
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        floatingOverlayManager.hideOverlay()
         thermalMonitorJob?.cancel()
         thermalMonitorJob = null
         chargeGuardJob?.cancel()
