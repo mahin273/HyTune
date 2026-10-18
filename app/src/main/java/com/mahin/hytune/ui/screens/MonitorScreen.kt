@@ -12,13 +12,21 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.mahin.hytune.ui.battery.BatteryCard
+import com.mahin.hytune.ui.battery.BatteryViewModel
+import com.mahin.hytune.ui.battery.ChargingSessionsCard
 
 @Composable
 fun MonitorScreen(
+    batteryViewModel: BatteryViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
+    val batteryUiState by batteryViewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
     Column(
@@ -28,6 +36,15 @@ fun MonitorScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Battery Real-time Telemetry
+        BatteryCard(batteryState = batteryUiState.batteryState)
+
+        // Historical Charging Sessions
+        ChargingSessionsCard(
+            sessions = batteryUiState.sessions,
+            onClearHistory = { batteryViewModel.clearSessionHistory() }
+        )
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -45,29 +62,6 @@ fun MonitorScreen(
                 )
                 Text(
                     text = "Continuous sampling of CPU load, GPU clock, memory pressure, thermal zones, and battery discharge wattage.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Telemetry Monitors",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "Floating FPS & Performance Overlay\nPer-Core Frequency & Utilization\nThermal Sensors & Throttle Detection\nCharging & Discharge Rate Graph",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
