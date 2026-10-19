@@ -80,7 +80,7 @@ class BatteryEngine @Inject constructor(
         }
 
         val tempRaw = privilegeBackend.readFile("$basePath/temp").getOrNull()?.trim()?.toFloatOrNull() ?: 0f
-        val temperatureC = if (tempRaw > 150f) tempRaw / 10f else tempRaw
+        val temperatureC = com.mahin.hytune.domain.thermal.ThermalUtils.normalizeTemperature(tempRaw)
 
         val chargeCounter = privilegeBackend.readFile("$basePath/charge_counter").getOrNull()?.trim()?.toLongOrNull() ?: 0L
         val technology = privilegeBackend.readFile("$basePath/technology").getOrNull()?.trim() ?: "Li-ion"

@@ -43,7 +43,7 @@ import javax.inject.Singleton
 import kotlin.math.roundToInt
 
 @Singleton
-class FloatingOverlayManager @Inject constructor(
+class FloatingOverlayManager(
     @ApplicationContext private val context: Context,
     private val appSettingsRepository: AppSettingsRepository,
     private val cpuControlEngine: CpuControlEngine,
@@ -52,9 +52,32 @@ class FloatingOverlayManager @Inject constructor(
     private val batteryRepository: BatteryRepository,
     private val thermalRepository: ThermalRepository,
     private val fpsSampler: FpsSampler,
-    private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val mainDispatcher: CoroutineDispatcher,
+    private val ioDispatcher: CoroutineDispatcher
 ) {
+
+    @Inject
+    constructor(
+        @ApplicationContext context: Context,
+        appSettingsRepository: AppSettingsRepository,
+        cpuControlEngine: CpuControlEngine,
+        gpuControlEngine: GpuControlEngine,
+        memoryControlEngine: MemoryControlEngine,
+        batteryRepository: BatteryRepository,
+        thermalRepository: ThermalRepository,
+        fpsSampler: FpsSampler
+    ) : this(
+        context = context,
+        appSettingsRepository = appSettingsRepository,
+        cpuControlEngine = cpuControlEngine,
+        gpuControlEngine = gpuControlEngine,
+        memoryControlEngine = memoryControlEngine,
+        batteryRepository = batteryRepository,
+        thermalRepository = thermalRepository,
+        fpsSampler = fpsSampler,
+        mainDispatcher = Dispatchers.Main.immediate,
+        ioDispatcher = Dispatchers.IO
+    )
 
     private val windowManager by lazy {
         context.getSystemService(Context.WINDOW_SERVICE) as WindowManager

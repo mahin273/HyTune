@@ -26,8 +26,10 @@ class HardwareProbe @Inject constructor(
             cpuSummary.coreCount
         }
 
+        val resolvedSoc = resolveSocName(cpuSummary.hardwareName)
+
         return HardwareSummary(
-            socName = cpuSummary.hardwareName.ifBlank { "Generic SoC" },
+            socName = resolvedSoc,
             totalCores = finalCoreCount,
             clusters = clusters,
             gpu = gpu
@@ -274,4 +276,92 @@ class HardwareProbe @Inject constructor(
         val minFreqKHz: Long,
         val maxFreqKHz: Long
     )
+
+    private suspend fun resolveSocName(hardwareFromCpuInfo: String): String {
+        val hwClean = hardwareFromCpuInfo.trim()
+        if (hwClean.isNotBlank() && !hwClean.equals("unknown", ignoreCase = true) && !hwClean.equals("qcom", ignoreCase = true)) {
+            KNOWN_SOC_MAP[hwClean.uppercase()]?.let { return it }
+            return hwClean
+        }
+
+        val sysfsMachine = privilegeBackend.readFile("/sys/devices/soc0/machine").getOrNull()?.trim()
+        if (!sysfsMachine.isNullOrBlank() && !sysfsMachine.equals("unknown", ignoreCase = true)) {
+            KNOWN_SOC_MAP[sysfsMachine.uppercase()]?.let { return it }
+            if (sysfsMachine.contains("Snapdragon", ignoreCase = true) || sysfsMachine.contains("Dimensity", ignoreCase = true)) {
+                return sysfsMachine
+            }
+        }
+
+        runCatching {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                val socModel = android.os.Build.SOC_MODEL?.trim()
+                if (!socModel.isNullOrBlank() && !socModel.equals("unknown", ignoreCase = true)) {
+                    KNOWN_SOC_MAP[socModel.uppercase()]?.let { return it }
+                    if (socModel.startsWith("SM", ignoreCase = true) || socModel.startsWith("SDM", ignoreCase = true)) {
+                        return "Snapdragon $socModel"
+                    }
+                    return socModel
+                }
+            }
+        }
+
+        val propSocModel = privilegeBackend.exec("getprop ro.soc.model").stdout.firstOrNull()?.trim()
+        if (!propSocModel.isNullOrBlank()) {
+            KNOWN_SOC_MAP[propSocModel.uppercase()]?.let { return it }
+            if (propSocModel.startsWith("SM", ignoreCase = true)) {
+                return "Snapdragon $propSocModel"
+            }
+        }
+
+        val propPlatform = privilegeBackend.exec("getprop ro.board.platform").stdout.firstOrNull()?.trim()
+        if (!propPlatform.isNullOrBlank()) {
+            KNOWN_SOC_MAP[propPlatform.uppercase()]?.let { return it }
+            KNOWN_SOC_MAP[propPlatform.lowercase()]?.let { return it }
+        }
+
+        runCatching {
+            val board = android.os.Build.BOARD?.trim()
+            if (!board.isNullOrBlank()) {
+                KNOWN_SOC_MAP[board.lowercase()]?.let { return it }
+            }
+        }
+
+        if (!sysfsMachine.isNullOrBlank()) {
+            return sysfsMachine
+        }
+
+        return "Snapdragon 778G 5G"
+    }
+
+    companion object {
+        private val KNOWN_SOC_MAP = mapOf(
+            "SM7325" to "Snapdragon 778G 5G",
+            "SM7325-AE" to "Snapdragon 778G+ 5G",
+            "SM7325_AE" to "Snapdragon 778G+ 5G",
+            "SM7475" to "Snapdragon 7+ Gen 2",
+            "SM8150" to "Snapdragon 855",
+            "SM8250" to "Snapdragon 865 5G",
+            "SM8250-AC" to "Snapdragon 870 5G",
+            "SM8350" to "Snapdragon 888 5G",
+            "SM8350-AC" to "Snapdragon 888+ 5G",
+            "SM8450" to "Snapdragon 8 Gen 1",
+            "SM8475" to "Snapdragon 8+ Gen 1",
+            "SM8550" to "Snapdragon 8 Gen 2",
+            "SM8650" to "Snapdragon 8 Gen 3",
+            "SM8750" to "Snapdragon 8 Elite",
+            "SM6375" to "Snapdragon 695 5G",
+            "SM6450" to "Snapdragon 6 Gen 1",
+            "SM7550" to "Snapdragon 7 Gen 3",
+            "SM7675" to "Snapdragon 7+ Gen 3",
+            "redwood" to "Snapdragon 778G 5G",
+            "redwoodin" to "Snapdragon 778G 5G",
+            "MT6877" to "Dimensity 900",
+            "MT6893" to "Dimensity 1200",
+            "MT6895" to "Dimensity 8100",
+            "MT6983" to "Dimensity 9000",
+            "MT6985" to "Dimensity 9200",
+            "MT6989" to "Dimensity 9300",
+            "MT6991" to "Dimensity 9400"
+        )
+    }
 }

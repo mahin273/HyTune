@@ -29,7 +29,12 @@ val DarkColorScheme = darkColorScheme(
     surface = SurfaceDark,
     onSurface = OnSurfaceDark,
     surfaceVariant = SurfaceVariantDark,
-    onSurfaceVariant = OnSurfaceVariantDark
+    onSurfaceVariant = OnSurfaceVariantDark,
+    surfaceContainer = SurfaceVariantDark,
+    surfaceContainerHigh = SurfaceContainerHighDark,
+    surfaceContainerHighest = SurfaceContainerHighDark,
+    outline = OutlineDark,
+    outlineVariant = OutlineDark
 )
 
 val LightColorScheme = lightColorScheme(
@@ -67,8 +72,8 @@ fun createAmoledColorScheme(baseScheme: ColorScheme): ColorScheme {
 
 @Composable
 fun HyTuneTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    darkTheme: Boolean = true,
+    dynamicColor: Boolean = false,
     amoledMode: Boolean = false,
     content: @Composable () -> Unit
 ) {

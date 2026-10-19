@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -13,6 +14,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.mahin.hytune.ui.theme.CyanPrimaryDark
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -40,13 +44,24 @@ fun HyTuneAppShell(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(text = currentDestination.label)
+                    Text(
+                        text = if (currentDestination == HyTuneDestination.Home) "HyTune" else currentDestination.label,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        ),
+                        color = if (currentDestination == HyTuneDestination.Home) CyanPrimaryDark else MaterialTheme.colorScheme.onSurface
+                    )
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors()
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
                 HyTuneDestination.bottomNavDestinations.forEach { destination ->
                     val selected = currentRoute == destination.route
                     NavigationBarItem(

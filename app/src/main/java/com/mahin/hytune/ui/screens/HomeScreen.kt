@@ -18,6 +18,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mahin.hytune.ui.common.loadingSemantics
 import com.mahin.hytune.ui.components.MetricCard
+import com.mahin.hytune.ui.components.PrivilegeStatusBanner
 import com.mahin.hytune.ui.components.ProfileModeSelector
 import com.mahin.hytune.ui.components.SocInfoCard
 import com.mahin.hytune.ui.dashboard.DashboardViewModel
@@ -41,8 +42,18 @@ fun HomeScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        PrivilegeStatusBanner(
+            tier = uiState.privilegeTier,
+            onRequestRoot = { viewModel.requestRoot() }
+        )
+
         if (uiState.hardwareSummary != null) {
-            SocInfoCard(summary = uiState.hardwareSummary!!)
+            val snapshot = uiState.latestSnapshot
+            SocInfoCard(
+                summary = uiState.hardwareSummary!!,
+                coreFrequencies = snapshot?.cpu?.coreFrequenciesKHz ?: emptyMap(),
+                thermals = snapshot?.thermals
+            )
         }
 
         if (uiState.profiles.isNotEmpty()) {

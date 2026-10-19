@@ -24,6 +24,12 @@ class PrivilegeManager @Inject constructor(
         _activeBackend.value = resolveBackend()
     }
 
+    suspend fun requestRootAccess(): Boolean {
+        val granted = rootShellRunner.requestRoot()
+        refresh()
+        return granted || _activeBackend.value.tier == PrivilegeTier.ROOT
+    }
+
     fun setOverride(backend: PrivilegeBackend?) {
         manualOverride = backend
         _activeBackend.value = resolveBackend()

@@ -22,10 +22,16 @@ class DashboardViewModel @Inject constructor(
     private val hardwareProbe: HardwareProbe,
     private val samplerEngine: SystemSamplerEngine,
     private val settingsRepository: AppSettingsRepository,
-    private val profileDao: ProfileDao
+    private val profileDao: ProfileDao,
+    private val privilegeManager: com.mahin.hytune.core.privilege.PrivilegeManager? = null
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(DashboardUiState())
+    private val _uiState = MutableStateFlow(
+        DashboardUiState(
+            privilegeTier = privilegeManager?.activeBackend?.value?.tier ?: com.mahin.hytune.core.privilege.PrivilegeTier.NONE,
+            isRootActive = privilegeManager?.activeBackend?.value?.tier == com.mahin.hytune.core.privilege.PrivilegeTier.ROOT
+        )
+    )
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     private var sampleJob: kotlinx.coroutines.Job? = null
@@ -33,7 +39,27 @@ class DashboardViewModel @Inject constructor(
     init {
         loadHardwareInfo()
         observeSettingsAndProfiles()
+        observePrivilegeState()
         startSampling()
+    }
+
+    private fun observePrivilegeState() {
+        privilegeManager?.let { pm ->
+            viewModelScope.launch {
+                pm.activeBackend.collect { backend ->
+                    _uiState.update {
+                        it.copy(
+                            privilegeTier = backend.tier,
+                            isRootActive = backend.tier == com.mahin.hytune.core.privilege.PrivilegeTier.ROOT
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun requestRoot(): Job = viewModelScope.launch {
+        privilegeManager?.requestRootAccess()
     }
 
     private fun loadHardwareInfo() {

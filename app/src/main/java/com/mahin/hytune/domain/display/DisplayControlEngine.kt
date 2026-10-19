@@ -136,6 +136,9 @@ class DisplayControlEngine @Inject constructor(
 
             val res1 = privilegeBackend.exec("settings put system min_refresh_rate $minHz")
             val res2 = privilegeBackend.exec("settings put system peak_refresh_rate $peakHz")
+            privilegeBackend.exec("settings put system user_refresh_rate $peakHz")
+            privilegeBackend.exec("settings put secure user_refresh_rate $peakHz")
+            privilegeBackend.exec("settings put secure refresh_rate_mode 2")
             if (!res1.isSuccess || !res2.isSuccess) {
                 throw IllegalStateException("Failed to set refresh rate: ${res1.errorOutput} ${res2.errorOutput}")
             }
@@ -146,6 +149,9 @@ class DisplayControlEngine @Inject constructor(
         runCatching {
             privilegeBackend.exec("settings delete system min_refresh_rate")
             privilegeBackend.exec("settings delete system peak_refresh_rate")
+            privilegeBackend.exec("settings delete system user_refresh_rate")
+            privilegeBackend.exec("settings delete secure user_refresh_rate")
+            privilegeBackend.exec("settings delete secure refresh_rate_mode")
             Unit
         }
     }

@@ -103,11 +103,7 @@ class ThermalEngine @Inject constructor(
     }
 
     private fun normalizeTemperature(raw: Float): Float {
-        return when {
-            raw > 1000f -> raw / 1000f
-            raw > 150f -> raw / 10f
-            else -> raw
-        }
+        return ThermalUtils.normalizeTemperature(raw)
     }
 
     private fun classifyZoneType(name: String): ThermalZoneType {
