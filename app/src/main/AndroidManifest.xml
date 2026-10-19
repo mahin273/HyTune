@@ -64,6 +64,54 @@
             </intent-filter>
         </receiver>
 
+        <!-- Quick Settings Tiles -->
+        <service
+            android:name=".integration.tile.ProfileQuickTileService"
+            android:icon="@android:drawable/ic_menu_manage"
+            android:label="HyTune Profile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".integration.tile.OverlayQuickTileService"
+            android:icon="@android:drawable/ic_menu_view"
+            android:label="FPS Overlay"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- App Widget -->
+        <receiver
+            android:name=".integration.widget.HyTuneWidgetProvider"
+            android:label="HyTune Profile"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.mahin.hytune.action.WIDGET_CYCLE_PROFILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_hytune_info" />
+        </receiver>
+
+        <!-- Tasker & External Automation Receiver -->
+        <receiver
+            android:name=".integration.receiver.HyTuneAutomationReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.mahin.hytune.action.APPLY_PROFILE" />
+                <action android:name="com.mahin.hytune.action.TOGGLE_OVERLAY" />
+                <action android:name="com.mahin.hytune.action.RESET_DISPLAY" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

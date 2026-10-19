@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -129,7 +130,8 @@ class DashboardViewModelTest {
 
     @Test
     fun testProfileSelectionUpdatesSettings() = runTest(testDispatcher) {
-        viewModel.onProfileSelected("perf")
+        viewModel.onProfileSelected("perf").join()
+        advanceUntilIdle()
         val currentSettings = settingsRepository.settings.first { it.activeProfileId == "perf" }
         assertEquals("perf", currentSettings.activeProfileId)
     }

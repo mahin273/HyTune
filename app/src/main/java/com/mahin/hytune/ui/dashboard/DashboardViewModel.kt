@@ -101,8 +101,8 @@ class DashboardViewModel @Inject constructor(
         stopSampling()
     }
 
-    fun onProfileSelected(profileId: String) {
-        viewModelScope.launch {
+    fun onProfileSelected(profileId: String): Job {
+        return viewModelScope.launch {
             settingsRepository.setActiveProfileId(profileId)
         }
     }
