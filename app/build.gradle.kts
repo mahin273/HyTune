@@ -64,6 +64,14 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            all { testTask ->
+                testTask.jvmArgs(
+                    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                    "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+                    "--add-opens=java.base/java.io=ALL-UNNAMED",
+                    "--add-opens=java.base/sun.misc=ALL-UNNAMED"
+                )
+            }
         }
     }
 }
