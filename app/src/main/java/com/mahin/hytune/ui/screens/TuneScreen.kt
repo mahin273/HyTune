@@ -38,12 +38,14 @@ fun TuneScreen(
     cpuViewModel: CpuViewModel = hiltViewModel(),
     gpuViewModel: GpuViewModel = hiltViewModel(),
     memoryViewModel: MemoryViewModel = hiltViewModel(),
-    storageViewModel: StorageViewModel = hiltViewModel()
+    storageViewModel: StorageViewModel = hiltViewModel(),
+    displayViewModel: com.mahin.hytune.ui.display.DisplayViewModel = hiltViewModel()
 ) {
     val cpuUiState by cpuViewModel.uiState.collectAsStateWithLifecycle()
     val gpuUiState by gpuViewModel.uiState.collectAsStateWithLifecycle()
     val memoryUiState by memoryViewModel.uiState.collectAsStateWithLifecycle()
     val storageUiState by storageViewModel.uiState.collectAsStateWithLifecycle()
+    val displayUiState by displayViewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -92,6 +94,14 @@ fun TuneScreen(
         if (err != null) {
             snackbarHostState.showSnackbar(err)
             storageViewModel.clearErrorMessage()
+        }
+    }
+
+    LaunchedEffect(displayUiState.userMessage) {
+        val msg = displayUiState.userMessage
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            displayViewModel.dismissUserMessage()
         }
     }
 
@@ -180,6 +190,17 @@ fun TuneScreen(
                     onReadAheadChanged = { dev, kb -> storageViewModel.onReadAheadChanged(dev, kb) },
                     onApplyClicked = { dev -> storageViewModel.applyStorageSettings(dev) },
                     onTrimClicked = { storageViewModel.runTrim("/data") }
+                )
+
+                com.mahin.hytune.ui.components.DisplayCard(
+                    uiState = displayUiState,
+                    onApplyResolution = { w, h, autoDpi -> displayViewModel.applyResolutionWithCountdown(w, h, autoDpi) },
+                    onApplyDensity = { dpi -> displayViewModel.applyDensityWithCountdown(dpi) },
+                    onApplyRefreshRate = { minHz, peakHz -> displayViewModel.applyRefreshRate(minHz, peakHz) },
+                    onResetRefreshRate = { displayViewModel.resetRefreshRate() },
+                    onConfirmChanges = { displayViewModel.confirmChanges() },
+                    onRevertChanges = { displayViewModel.revertChangesNow() },
+                    onResetAllDefaults = { displayViewModel.resetAllDefaults() }
                 )
             }
         }
