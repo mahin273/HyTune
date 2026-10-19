@@ -19,14 +19,20 @@ class ChargeControlEngine @Inject constructor(
     private val chargingControlNodes = listOf(
         "/sys/class/power_supply/battery/charging_enabled",
         "/sys/class/power_supply/battery/battery_charging_enabled",
-        "/sys/class/power_supply/battery/input_suspend"
+        "/sys/class/power_supply/battery/input_suspend",
+        "/sys/class/power_supply/battery/step_charging_enabled",
+        "/sys/class/power_supply/main/charging_enabled",
+        "/sys/class/qcom-battery/charging_en",
+        "/sys/class/power_supply/charger/charging_enabled"
     )
 
     private val chargeLimitNodes = listOf(
         "/sys/class/power_supply/battery/constant_charge_current_max",
         "/sys/class/power_supply/battery/current_max",
         "/sys/class/power_supply/main/constant_charge_current_max",
-        "/sys/class/power_supply/main/current_max"
+        "/sys/class/power_supply/main/current_max",
+        "/sys/class/qcom-battery/restricted_current",
+        "/sys/class/power_supply/battery/charge_control_limit"
     )
 
     suspend fun getStatus(): ChargeControlStatus = withContext(ioDispatcher) {
@@ -124,7 +130,7 @@ class ChargeControlEngine @Inject constructor(
     private suspend fun findWorkingChargingNode(): String? {
         for (node in chargingControlNodes) {
             val content = privilegeBackend.readFile(node).getOrNull()
-            if (!content.isNullOrBlank()) {
+            if (!content.isNullOrBlank() || privilegeBackend.exists(node)) {
                 return node
             }
         }
@@ -134,7 +140,7 @@ class ChargeControlEngine @Inject constructor(
     private suspend fun findWorkingLimitNode(): String? {
         for (node in chargeLimitNodes) {
             val content = privilegeBackend.readFile(node).getOrNull()
-            if (!content.isNullOrBlank()) {
+            if (!content.isNullOrBlank() || privilegeBackend.exists(node)) {
                 return node
             }
         }

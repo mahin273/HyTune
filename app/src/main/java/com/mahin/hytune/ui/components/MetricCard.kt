@@ -34,9 +34,11 @@ fun MetricCard(
         modifier = modifier
             .fillMaxWidth()
             .telemetryAnnouncement(title, primaryValue),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
     ) {
         Column(
             modifier = Modifier.padding(16.dp),

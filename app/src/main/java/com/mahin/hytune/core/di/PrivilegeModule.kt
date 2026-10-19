@@ -63,6 +63,7 @@ object PrivilegeModule {
     )
 
     @Provides
+    @Singleton
     fun provideActivePrivilegeBackend(privilegeManager: PrivilegeManager): PrivilegeBackend =
-        privilegeManager.activeBackend.value
+        com.mahin.hytune.core.privilege.DelegatingPrivilegeBackend(privilegeManager)
 }

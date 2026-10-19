@@ -19,7 +19,16 @@ class LibsuShellRunner(
     }
 
     override fun isRootAvailable(): Boolean {
-        return Shell.isAppGrantedRoot() == true || Shell.getShell().isRoot
+        return Shell.isAppGrantedRoot() == true || (Shell.getCachedShell()?.isRoot == true)
+    }
+
+    override suspend fun requestRoot(): Boolean = withContext(ioDispatcher) {
+        try {
+            val shell = Shell.getShell()
+            shell.isRoot
+        } catch (_: Exception) {
+            false
+        }
     }
 
     override suspend fun runCommand(command: String): CommandResult = withContext(ioDispatcher) {

@@ -162,7 +162,7 @@ class SystemSamplerEngine @Inject constructor(
             val tempRawStr = privilegeBackend.readFile("$thermalBase/$zone/temp").getOrNull()?.trim() ?: continue
             val tempRaw = tempRawStr.toFloatOrNull() ?: continue
 
-            val tempC = if (abs(tempRaw) > 1000f) tempRaw / 1000f else tempRaw
+            val tempC = com.mahin.hytune.domain.thermal.ThermalUtils.normalizeTemperature(tempRaw)
 
             zones[type] = tempC
 
@@ -200,11 +200,7 @@ class SystemSamplerEngine @Inject constructor(
 
         val tempRawStr = privilegeBackend.readFile("$batteryBase/temp").getOrNull()?.trim()
         val tempRaw = tempRawStr?.toFloatOrNull() ?: 0f
-        val tempC = when {
-            tempRaw > 1000f -> tempRaw / 1000f
-            tempRaw > 100f -> tempRaw / 10f
-            else -> tempRaw
-        }
+        val tempC = com.mahin.hytune.domain.thermal.ThermalUtils.normalizeTemperature(tempRaw)
 
         val voltageRaw = privilegeBackend.readFile("$batteryBase/voltage_now").getOrNull()?.trim()?.toLongOrNull() ?: 0L
         val voltageV = voltageRaw / 1_000_000f

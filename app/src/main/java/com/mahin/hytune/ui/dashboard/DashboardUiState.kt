@@ -14,6 +14,8 @@ data class DashboardUiState(
     val ramUsageHistory: List<Float> = emptyList(),
     val tempHistory: List<Float> = emptyList(),
     val batteryWattageHistory: List<Float> = emptyList(),
+    val privilegeTier: com.mahin.hytune.core.privilege.PrivilegeTier = com.mahin.hytune.core.privilege.PrivilegeTier.NONE,
+    val isRootActive: Boolean = false,
     val isLoading: Boolean = true
 ) {
     companion object {
