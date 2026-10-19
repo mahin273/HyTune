@@ -30,5 +30,9 @@ data class AppSettings(
     val overlayShowRam: Boolean = true,
     val overlayShowFps: Boolean = true,
     val overlayPositionX: Int = 100,
-    val overlayPositionY: Int = 200
+    val overlayPositionY: Int = 200,
+    val applyOnBoot: Boolean = false,
+    val bootApplyDelaySeconds: Int = 30,
+    val bootApplyNotificationEnabled: Boolean = true,
+    val lastBootApplyStatus: String? = null
 )

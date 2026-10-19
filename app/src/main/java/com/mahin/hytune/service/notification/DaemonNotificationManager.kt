@@ -24,7 +24,11 @@ class DaemonNotificationManager @Inject constructor(
         const val CHANNEL_ID = "hytune_daemon_channel"
         const val CHANNEL_NAME = "HyTune Daemon"
         const val CHANNEL_DESCRIPTION = "Ongoing background daemon service notification showing active profile and system status"
+        const val BOOT_CHANNEL_ID = "hytune_boot_channel"
+        const val BOOT_CHANNEL_NAME = "HyTune Boot Apply"
+        const val BOOT_CHANNEL_DESCRIPTION = "Notifications reporting boot apply status and safety guard events"
         const val NOTIFICATION_ID = 1001
+        const val BOOT_NOTIFICATION_ID = 1002
         const val REQUEST_CODE_CONTENT = 101
         const val REQUEST_CODE_STOP = 102
     }
@@ -35,7 +39,7 @@ class DaemonNotificationManager @Inject constructor(
 
     fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
+            val daemonChannel = NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_LOW
@@ -43,8 +47,16 @@ class DaemonNotificationManager @Inject constructor(
                 description = CHANNEL_DESCRIPTION
                 setShowBadge(false)
             }
+            val bootChannel = NotificationChannel(
+                BOOT_CHANNEL_ID,
+                BOOT_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = BOOT_CHANNEL_DESCRIPTION
+                setShowBadge(true)
+            }
             val notificationManager = context.getSystemService(NotificationManager::class.java)
-            notificationManager?.createNotificationChannel(channel)
+            notificationManager?.createNotificationChannels(listOf(daemonChannel, bootChannel))
         }
     }
 
@@ -96,6 +108,33 @@ class DaemonNotificationManager @Inject constructor(
         try {
             val notification = buildForegroundNotification(activeProfileName, statusSummary)
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        } catch (_: Throwable) {
+            // Suppress notification errors in test environments or when POST_NOTIFICATIONS is denied
+        }
+    }
+
+    fun postBootNotification(title: String, message: String, isWarning: Boolean = false) {
+        try {
+            createNotificationChannel()
+            val contentIntent = PendingIntent.getActivity(
+                context,
+                REQUEST_CODE_CONTENT,
+                Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val builder = NotificationCompat.Builder(context, BOOT_CHANNEL_ID)
+                .setSmallIcon(if (isWarning) android.R.drawable.stat_notify_error else android.R.drawable.stat_notify_sync)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+                .setPriority(if (isWarning) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .setContentIntent(contentIntent)
+
+            NotificationManagerCompat.from(context).notify(BOOT_NOTIFICATION_ID, builder.build())
         } catch (_: Throwable) {
             // Suppress notification errors in test environments or when POST_NOTIFICATIONS is denied
         }
