@@ -17,6 +17,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -128,37 +129,35 @@ class PerAppRulesViewModel @Inject constructor(
         initialValue = PerAppUiState(isLoading = true)
     )
 
-    fun loadInstalledApps() {
-        viewModelScope.launch(ioDispatcher) {
-            _isLoading.value = true
-            val pm = context.packageManager
-            val packages = try {
-                pm.getInstalledApplications(PackageManager.GET_META_DATA)
-            } catch (_: Exception) {
-                emptyList<ApplicationInfo>()
-            }
-
-            val appList = packages
-                .filter { it.packageName != context.packageName }
-                .map { appInfo ->
-                    val label = try {
-                        pm.getApplicationLabel(appInfo).toString()
-                    } catch (_: Exception) {
-                        appInfo.packageName
-                    }
-                    val isGame = gameClassifier.isApplicationInfoGame(appInfo)
-
-                    AppItemUiModel(
-                        packageName = appInfo.packageName,
-                        appLabel = label,
-                        isGame = isGame
-                    )
-                }
-                .sortedBy { it.appLabel.lowercase() }
-
-            _installedApps.value = appList
-            _isLoading.value = false
+    fun loadInstalledApps(): Job = viewModelScope.launch(ioDispatcher) {
+        _isLoading.value = true
+        val pm = context.packageManager
+        val packages = try {
+            pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        } catch (_: Exception) {
+            emptyList<ApplicationInfo>()
         }
+
+        val appList = packages
+            .filter { it.packageName != context.packageName }
+            .map { appInfo ->
+                val label = try {
+                    pm.getApplicationLabel(appInfo).toString()
+                } catch (_: Exception) {
+                    appInfo.packageName
+                }
+                val isGame = gameClassifier.isApplicationInfoGame(appInfo)
+
+                AppItemUiModel(
+                    packageName = appInfo.packageName,
+                    appLabel = label,
+                    isGame = isGame
+                )
+            }
+            .sortedBy { it.appLabel.lowercase() }
+
+        _installedApps.value = appList
+        _isLoading.value = false
     }
 
     fun setInstalledAppsForTesting(apps: List<AppItemUiModel>) {
@@ -166,10 +165,8 @@ class PerAppRulesViewModel @Inject constructor(
         _isLoading.value = false
     }
 
-    fun togglePerAppProfilesEnabled(enabled: Boolean) {
-        viewModelScope.launch(ioDispatcher) {
-            appSettingsRepository.setPerAppProfilesEnabled(enabled)
-        }
+    fun togglePerAppProfilesEnabled(enabled: Boolean): Job = viewModelScope.launch(ioDispatcher) {
+        appSettingsRepository.setPerAppProfilesEnabled(enabled)
     }
 
     fun setSearchQuery(query: String) {
@@ -186,28 +183,22 @@ class PerAppRulesViewModel @Inject constructor(
         isGame: Boolean,
         targetRefreshRate: Int?,
         dndEnabled: Boolean
-    ) {
-        viewModelScope.launch(ioDispatcher) {
-            val entity = AppRuleEntity(
-                packageName = packageName,
-                profileId = profileId,
-                isGame = isGame,
-                targetRefreshRate = targetRefreshRate,
-                dndEnabled = dndEnabled
-            )
-            appRuleRepository.upsertRule(entity)
-        }
+    ): Job = viewModelScope.launch(ioDispatcher) {
+        val entity = AppRuleEntity(
+            packageName = packageName,
+            profileId = profileId,
+            isGame = isGame,
+            targetRefreshRate = targetRefreshRate,
+            dndEnabled = dndEnabled
+        )
+        appRuleRepository.upsertRule(entity)
     }
 
-    fun removeAppRule(packageName: String) {
-        viewModelScope.launch(ioDispatcher) {
-            appRuleRepository.deleteRule(packageName)
-        }
+    fun removeAppRule(packageName: String): Job = viewModelScope.launch(ioDispatcher) {
+        appRuleRepository.deleteRule(packageName)
     }
 
-    fun toggleGame(packageName: String, isGame: Boolean) {
-        viewModelScope.launch(ioDispatcher) {
-            appRuleRepository.setGame(packageName, isGame)
-        }
+    fun toggleGame(packageName: String, isGame: Boolean): Job = viewModelScope.launch(ioDispatcher) {
+        appRuleRepository.setGame(packageName, isGame)
     }
 }
