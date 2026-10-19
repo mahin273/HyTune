@@ -33,6 +33,7 @@ class RoomDatabaseTest {
     private lateinit var thermalThrottleDao: com.mahin.hytune.data.local.db.dao.ThermalThrottleDao
     private lateinit var benchmarkSessionDao: com.mahin.hytune.data.local.db.dao.BenchmarkSessionDao
     private lateinit var automationRuleDao: com.mahin.hytune.data.local.db.dao.AutomationRuleDao
+    private lateinit var customScriptDao: com.mahin.hytune.data.local.db.dao.CustomScriptDao
 
     @Before
     fun setUp() {
@@ -46,6 +47,7 @@ class RoomDatabaseTest {
         thermalThrottleDao = db.thermalThrottleDao()
         benchmarkSessionDao = db.benchmarkSessionDao()
         automationRuleDao = db.automationRuleDao()
+        customScriptDao = db.customScriptDao()
     }
 
     @After
@@ -319,5 +321,68 @@ class RoomDatabaseTest {
 
         automationRuleDao.clearAllRules()
         assertTrue(automationRuleDao.getAllRules().first().isEmpty())
+    }
+
+    @Test
+    fun customScriptDao_insertUpdateQueryAndDelete() = runTest {
+        val s1 = com.mahin.hytune.data.local.db.entity.CustomScriptEntity(
+            name = "Compaction",
+            scriptContent = "echo 1 > /sys/block/zram0/compact",
+            runAtBoot = false,
+            runAsRoot = true,
+            lastExecutedEpochMs = 0,
+            lastExitCode = null,
+            lastOutput = null,
+            lastDurationMs = 0,
+            createdAtEpochMs = 1000L
+        )
+        val s2 = com.mahin.hytune.data.local.db.entity.CustomScriptEntity(
+            name = "Drop Caches",
+            scriptContent = "echo 3 > /proc/sys/vm/drop_caches",
+            runAtBoot = true,
+            runAsRoot = true,
+            lastExecutedEpochMs = 0,
+            lastExitCode = null,
+            lastOutput = null,
+            lastDurationMs = 0,
+            createdAtEpochMs = 2000L
+        )
+
+        val id1 = customScriptDao.insertScript(s1)
+        val id2 = customScriptDao.insertScript(s2)
+
+        val allScripts = customScriptDao.getAllScripts().first()
+        assertEquals(2, allScripts.size)
+
+        val bootScripts = customScriptDao.getBootScripts()
+        assertEquals(1, bootScripts.size)
+        assertEquals("Drop Caches", bootScripts.first().name)
+
+        val retrieved = customScriptDao.getScriptById(id1)
+        assertNotNull(retrieved)
+        assertEquals("Compaction", retrieved!!.name)
+
+        customScriptDao.updateExecutionResult(
+            id = id1,
+            exitCode = 0,
+            output = "Compaction done",
+            durationMs = 45L,
+            timestamp = 5000L
+        )
+        val afterExec = customScriptDao.getScriptById(id1)
+        assertEquals(0, afterExec?.lastExitCode)
+        assertEquals("Compaction done", afterExec?.lastOutput)
+        assertEquals(45L, afterExec?.lastDurationMs)
+        assertEquals(5000L, afterExec?.lastExecutedEpochMs)
+
+        customScriptDao.updateRunAtBoot(id1, true)
+        val bootAfterToggle = customScriptDao.getBootScripts()
+        assertEquals(2, bootAfterToggle.size)
+
+        customScriptDao.deleteScriptById(id2)
+        assertNull(customScriptDao.getScriptById(id2))
+
+        customScriptDao.clearAllScripts()
+        assertTrue(customScriptDao.getAllScripts().first().isEmpty())
     }
 }

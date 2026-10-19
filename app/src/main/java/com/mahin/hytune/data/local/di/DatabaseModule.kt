@@ -38,7 +38,8 @@ object DatabaseModule {
                 HyTuneDatabase.MIGRATION_1_2,
                 HyTuneDatabase.MIGRATION_2_3,
                 HyTuneDatabase.MIGRATION_3_4,
-                HyTuneDatabase.MIGRATION_4_5
+                HyTuneDatabase.MIGRATION_4_5,
+                HyTuneDatabase.MIGRATION_5_6
             )
             .fallbackToDestructiveMigration()
             .build()
@@ -64,6 +65,9 @@ object DatabaseModule {
 
     @Provides
     fun provideAutomationRuleDao(database: HyTuneDatabase): com.mahin.hytune.data.local.db.dao.AutomationRuleDao = database.automationRuleDao()
+
+    @Provides
+    fun provideCustomScriptDao(database: HyTuneDatabase): com.mahin.hytune.data.local.db.dao.CustomScriptDao = database.customScriptDao()
 
     @Provides
     @Singleton

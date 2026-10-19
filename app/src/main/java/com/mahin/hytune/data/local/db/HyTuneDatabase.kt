@@ -27,9 +27,10 @@ import com.mahin.hytune.data.local.db.entity.ThermalThrottleEventEntity
         FreezeGroupPackageCrossRef::class,
         ThermalThrottleEventEntity::class,
         BenchmarkSessionEntity::class,
-        com.mahin.hytune.data.local.db.entity.AutomationRuleEntity::class
+        com.mahin.hytune.data.local.db.entity.AutomationRuleEntity::class,
+        com.mahin.hytune.data.local.db.entity.CustomScriptEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class HyTuneDatabase : RoomDatabase() {
@@ -40,6 +41,7 @@ abstract class HyTuneDatabase : RoomDatabase() {
     abstract fun thermalThrottleDao(): ThermalThrottleDao
     abstract fun benchmarkSessionDao(): BenchmarkSessionDao
     abstract fun automationRuleDao(): com.mahin.hytune.data.local.db.dao.AutomationRuleDao
+    abstract fun customScriptDao(): com.mahin.hytune.data.local.db.dao.CustomScriptDao
 
     companion object {
         const val DATABASE_NAME = "hytune.db"
@@ -147,6 +149,28 @@ abstract class HyTuneDatabase : RoomDatabase() {
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_automation_rules_isEnabled` ON `automation_rules` (`isEnabled`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_automation_rules_priority` ON `automation_rules` (`priority`)")
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `custom_scripts` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `scriptContent` TEXT NOT NULL,
+                        `runAtBoot` INTEGER NOT NULL,
+                        `runAsRoot` INTEGER NOT NULL,
+                        `lastExecutedEpochMs` INTEGER NOT NULL,
+                        `lastExitCode` INTEGER,
+                        `lastOutput` TEXT,
+                        `lastDurationMs` INTEGER NOT NULL,
+                        `createdAtEpochMs` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_custom_scripts_runAtBoot` ON `custom_scripts` (`runAtBoot`)")
             }
         }
     }
