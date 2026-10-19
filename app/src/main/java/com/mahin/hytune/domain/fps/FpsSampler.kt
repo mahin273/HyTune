@@ -31,7 +31,9 @@ class FpsSampler @Inject constructor(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
-    private val samplerScope = CoroutineScope(SupervisorJob() + ioDispatcher)
+    var testScopeOverride: CoroutineScope? = null
+    private val defaultScope = CoroutineScope(SupervisorJob() + ioDispatcher)
+    private val samplerScope: CoroutineScope get() = testScopeOverride ?: defaultScope
     private var samplingJob: Job? = null
 
     private val _frameMetrics = MutableStateFlow<FrameMetricsSnapshot?>(null)

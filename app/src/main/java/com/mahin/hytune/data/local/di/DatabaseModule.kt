@@ -8,6 +8,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
 import com.mahin.hytune.data.local.db.HyTuneDatabase
 import com.mahin.hytune.data.local.db.dao.AppRuleDao
+import com.mahin.hytune.data.local.db.dao.BenchmarkSessionDao
 import com.mahin.hytune.data.local.db.dao.ChargingSessionDao
 import com.mahin.hytune.data.local.db.dao.FreezeGroupDao
 import com.mahin.hytune.data.local.db.dao.ProfileDao
@@ -35,7 +36,8 @@ object DatabaseModule {
         )
             .addMigrations(
                 HyTuneDatabase.MIGRATION_1_2,
-                HyTuneDatabase.MIGRATION_2_3
+                HyTuneDatabase.MIGRATION_2_3,
+                HyTuneDatabase.MIGRATION_3_4
             )
             .fallbackToDestructiveMigration()
             .build()
@@ -55,6 +57,9 @@ object DatabaseModule {
 
     @Provides
     fun provideThermalThrottleDao(database: HyTuneDatabase): ThermalThrottleDao = database.thermalThrottleDao()
+
+    @Provides
+    fun provideBenchmarkSessionDao(database: HyTuneDatabase): BenchmarkSessionDao = database.benchmarkSessionDao()
 
     @Provides
     @Singleton
