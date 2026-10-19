@@ -65,8 +65,15 @@ class HardwareDiagnosticsEngine @Inject constructor(
         // Check Online Cores
         val onlineStr = backend.readFile("/sys/devices/system/cpu/online").getOrNull()?.trim()
         val onlineCheck = if (!onlineStr.isNullOrBlank()) {
-            val totalCores = Runtime.getRuntime().availableProcessors()
-            val isSingleCoreOffline = onlineStr.contains("-") && !onlineStr.endsWith("${totalCores - 1}")
+            val possibleStr = backend.readFile("/sys/devices/system/cpu/possible").getOrNull()?.trim()
+                ?: backend.readFile("/sys/devices/system/cpu/present").getOrNull()?.trim()
+
+            val isSingleCoreOffline = if (!possibleStr.isNullOrBlank()) {
+                onlineStr != possibleStr
+            } else {
+                val totalCores = Runtime.getRuntime().availableProcessors()
+                onlineStr.contains(",") || (totalCores > 1 && !onlineStr.endsWith("${totalCores - 1}"))
+            }
             if (isSingleCoreOffline) {
                 worstStatus = maxOfStatus(worstStatus, DiagnosticStatus.WARNING)
                 DiagnosticCheckItem(

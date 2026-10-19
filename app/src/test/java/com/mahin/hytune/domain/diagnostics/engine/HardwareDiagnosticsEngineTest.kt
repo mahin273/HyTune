@@ -59,6 +59,8 @@ class HardwareDiagnosticsEngineTest {
 
         // Setup CPU files
         fakeBackend.setFile("/sys/devices/system/cpu/online", "0-7\n")
+        fakeBackend.setFile("/sys/devices/system/cpu/possible", "0-7\n")
+        fakeBackend.setFile("/sys/devices/system/cpu/present", "0-7\n")
         fakeBackend.setFile("/sys/devices/system/cpu/cpufreq/policy0/scaling_governor", "schedutil\n")
 
         // Setup Thermal files

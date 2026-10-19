@@ -31,6 +31,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+import java.util.concurrent.Executor
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
@@ -52,8 +54,11 @@ class PerAppRulesViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         context = ApplicationProvider.getApplicationContext()
+        val directExecutor = Executor { it.run() }
         db = Room.inMemoryDatabaseBuilder(context, HyTuneDatabase::class.java)
             .allowMainThreadQueries()
+            .setQueryExecutor(directExecutor)
+            .setTransactionExecutor(directExecutor)
             .build()
 
         val testDataStore = PreferenceDataStoreFactory.create(
