@@ -10,49 +10,74 @@ HyTune implements a clean, layered architecture separating low-level hardware ab
 
 ```mermaid
 graph TD
-    subgraph Presentation Layer (Jetpack Compose & Material 3)
-        UI_Home[HomeScreen: Telemetry & Profiles]
-        UI_Tune[TuneScreen: CPU, GPU, RAM, Storage, Display]
-        UI_Apps[AppsScreen: App Manager & Freeze Groups]
-        UI_Monitor[MonitorScreen: Floating HUD & Benchmark]
-        UI_More[MoreScreen: Automation, Diagnostics, Backup & Settings]
+    subgraph SG_Presentation ["1. Presentation Layer (Jetpack Compose and Material 3)"]
+        UI_Home["HomeScreen: Telemetry and Profiles"]
+        UI_Tune["TuneScreen: CPU, GPU, RAM, Storage, Display"]
+        UI_Apps["AppsScreen: App Manager and Freeze Groups"]
+        UI_Monitor["MonitorScreen: Floating HUD and Benchmark"]
+        UI_More["MoreScreen: Automation, Diagnostics, Backup and Settings"]
     end
 
-    subgraph Service & System Integration
-        SVC_Daemon[HyTuneDaemonService: Foreground Lifecycle]
-        SVC_Overlay[FloatingOverlayManager: Draggable WindowManager HUD]
-        SVC_Tile[ProfileQuickTileService: Android Quick Settings]
-        SVC_Widget[HyTuneWidgetProvider: Home Screen Glances]
-        SVC_Receiver[BootCompletedReceiver & AutomationReceiver]
+    subgraph SG_Service ["2. Service and System Integration"]
+        SVC_Daemon["HyTuneDaemonService: Foreground Lifecycle"]
+        SVC_Overlay["FloatingOverlayManager: Draggable WindowManager HUD"]
+        SVC_Tile["ProfileQuickTileService: Android Quick Settings"]
+        SVC_Widget["HyTuneWidgetProvider: Home Screen Glances"]
+        SVC_Receiver["BootCompletedReceiver and AutomationReceiver"]
     end
 
-    subgraph Domain Orchestration & Safety
-        DOM_Profile[ProfileEngine: State Diffing & Rollback]
-        DOM_Safety[SafetyManager: Path Whitelists & Bootloop Guard]
-        DOM_Auto[AutomationRulesEngine: Trigger-Condition-Action Evaluator]
-        DOM_Diag[HardwareDiagnosticsEngine: Sensor & Display Health]
-        DOM_Backup[BackupRestoreManager: JSON Schema Export & Import]
+    subgraph SG_Domain ["3. Domain Orchestration and Safety"]
+        DOM_Profile["ProfileEngine: State Diffing and Rollback"]
+        DOM_Safety["SafetyManager: Path Whitelists and Bootloop Guard"]
+        DOM_Auto["AutomationRulesEngine: Trigger-Condition-Action Evaluator"]
+        DOM_Diag["HardwareDiagnosticsEngine: Sensor and Display Health"]
+        DOM_Backup["BackupRestoreManager: JSON Schema Export and Import"]
     end
 
-    subgraph Persistence Layer
-        DB_Room[(Room Database: 6 Migrated Tables)]
-        DS_Pref[(DataStore Preferences: AppSettings)]
+    subgraph SG_Persistence ["4. Persistence Layer"]
+        DB_Room[("Room Database: 6 Migrated Tables")]
+        DS_Pref[("DataStore Preferences: AppSettings")]
     end
 
-    subgraph Core Hardware & Privilege Abstraction
-        CORE_Priv[PrivilegeManager: Capability Resolution]
-        CORE_Root[RootPrivilegeBackend: libsu Shell]
-        CORE_Shizuku[ShizukuPrivilegeBackend: Binder IPC]
-        CORE_Fallback[UnprivilegedBackend: Read-Only Fallback]
-        SYS_Kernel[/Linux Kernel sysfs, procfs & devfreq Nodes/]
+    subgraph SG_Core ["5. Core Hardware and Privilege Abstraction"]
+        CORE_Priv["PrivilegeManager: Capability Resolution"]
+        CORE_Root["RootPrivilegeBackend: libsu Shell"]
+        CORE_Shizuku["ShizukuPrivilegeBackend: Binder IPC"]
+        CORE_Fallback["UnprivilegedBackend: Read-Only Fallback"]
+        SYS_Kernel[/"Linux Kernel sysfs, procfs and devfreq Nodes"/]
     end
 
-    UI_Home & UI_Tune & UI_Apps & UI_Monitor & UI_More --> DOM_Profile & DOM_Safety & DOM_Auto & DOM_Diag & DOM_Backup
-    SVC_Daemon & SVC_Overlay & SVC_Tile & SVC_Widget & SVC_Receiver --> DOM_Profile & DOM_Safety & DOM_Auto
-    DOM_Profile & DOM_Safety & DOM_Auto & DOM_Diag & DOM_Backup --> DB_Room & DS_Pref
-    DOM_Profile & DOM_Safety & DOM_Auto & DOM_Diag --> CORE_Priv
-    CORE_Priv --> CORE_Root & CORE_Shizuku & CORE_Fallback
-    CORE_Root & CORE_Shizuku & CORE_Fallback --> SYS_Kernel
+    UI_Home --> DOM_Profile
+    UI_Tune --> DOM_Profile
+    UI_Apps --> DOM_Auto
+    UI_Monitor --> DOM_Diag
+    UI_More --> DOM_Backup
+
+    SVC_Daemon --> DOM_Profile
+    SVC_Overlay --> DOM_Safety
+    SVC_Tile --> DOM_Profile
+    SVC_Widget --> DOM_Profile
+    SVC_Receiver --> DOM_Auto
+
+    DOM_Profile --> DB_Room
+    DOM_Profile --> DS_Pref
+    DOM_Safety --> DB_Room
+    DOM_Auto --> DB_Room
+    DOM_Diag --> DB_Room
+    DOM_Backup --> DB_Room
+
+    DOM_Profile --> CORE_Priv
+    DOM_Safety --> CORE_Priv
+    DOM_Auto --> CORE_Priv
+    DOM_Diag --> CORE_Priv
+
+    CORE_Priv --> CORE_Root
+    CORE_Priv --> CORE_Shizuku
+    CORE_Priv --> CORE_Fallback
+
+    CORE_Root --> SYS_Kernel
+    CORE_Shizuku --> SYS_Kernel
+    CORE_Fallback --> SYS_Kernel
 ```
 
 ---
