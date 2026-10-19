@@ -1,0 +1,61 @@
+name: Release Alpha APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Release Alpha APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission to Gradle
+        run: chmod +x gradlew
+
+      - name: Run Unit Tests
+        run: ./gradlew testReleaseUnitTest
+
+      - name: Build APKs
+        run: ./gradlew assembleRelease assembleDebug
+
+      - name: Prepare Release Artifacts
+        run: |
+          mkdir -p release-artifacts
+          cp app/build/outputs/apk/release/app-release.apk release-artifacts/HyTune-v1.0.0-alpha-release.apk
+          cp app/build/outputs/apk/debug/app-debug.apk release-artifacts/HyTune-v1.0.0-alpha-debug.apk
+
+      - name: Upload Workflow Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hytune-alpha-apks
+          path: release-artifacts/*
+
+      - name: Publish GitHub Alpha Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0-alpha.${{ github.run_number }}
+          name: "HyTune v1.0.0 Alpha (Build ${{ github.run_number }})"
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            release-artifacts/HyTune-v1.0.0-alpha-release.apk
+            release-artifacts/HyTune-v1.0.0-alpha-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
