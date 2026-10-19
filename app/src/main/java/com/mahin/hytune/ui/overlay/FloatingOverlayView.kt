@@ -176,6 +176,13 @@ private fun ExpandedOverlayCard(
 
             // Grid of Metrics
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (config.showFps && telemetry.fps > 0.0) {
+                    val fpsStr = String.format(Locale.US, "%.1f FPS", telemetry.fps)
+                    MetricRow(
+                        label = "FPS",
+                        value = fpsStr
+                    )
+                }
                 if (config.showCpu) {
                     MetricRow(
                         label = "CPU",

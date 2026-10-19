@@ -7,10 +7,24 @@ import androidx.test.core.app.ApplicationProvider
 import com.mahin.hytune.core.privilege.FakePrivilegeBackend
 import com.mahin.hytune.data.local.datastore.AppSettingsRepository
 import com.mahin.hytune.data.local.db.HyTuneDatabase
+import com.mahin.hytune.core.privilege.CommandResult
+import com.mahin.hytune.core.privilege.PrivilegeBackend
+import com.mahin.hytune.core.privilege.PrivilegeManager
+import com.mahin.hytune.core.privilege.PrivilegeTier
+import com.mahin.hytune.core.privilege.RootShellRunner
+import com.mahin.hytune.core.privilege.ShizukuShellRunner
 import com.mahin.hytune.domain.battery.BatteryEngine
 import com.mahin.hytune.domain.battery.BatteryRepository
 import com.mahin.hytune.domain.battery.ChargingSessionTracker
 import com.mahin.hytune.domain.cpu.CpuControlEngine
+import com.mahin.hytune.domain.detection.ForegroundAppDetector
+import com.mahin.hytune.domain.detection.IgnoredPackagesFilter
+import com.mahin.hytune.domain.detection.strategy.CgroupForegroundStrategy
+import com.mahin.hytune.domain.detection.strategy.DumpsysForegroundStrategy
+import com.mahin.hytune.domain.detection.strategy.UsageStatsForegroundStrategy
+import com.mahin.hytune.domain.fps.FpsSampler
+import com.mahin.hytune.domain.fps.parser.GfxinfoFramestatsParser
+import com.mahin.hytune.domain.fps.parser.SurfaceFlingerLatencyParser
 import com.mahin.hytune.domain.gpu.GpuControlEngine
 import com.mahin.hytune.domain.memory.MemoryControlEngine
 import com.mahin.hytune.domain.probe.HardwareProbe
@@ -80,6 +94,54 @@ class FloatingOverlayManagerTest {
         val thermalEngine = ThermalEngine(fakeBackend, testDispatcher)
         val thermalRepo = ThermalRepository(thermalEngine, thermalDao, testDispatcher)
 
+        val rootRunner = object : RootShellRunner {
+            override fun isRootAvailable(): Boolean = true
+            override suspend fun runCommand(command: String): CommandResult = fakeBackend.exec(command)
+        }
+        val shizukuRunner = object : ShizukuShellRunner {
+            override fun isShizukuAvailable(): Boolean = false
+            override suspend fun runCommand(command: String): CommandResult = fakeBackend.exec(command)
+        }
+        val rootBackend = object : PrivilegeBackend by fakeBackend {
+            override val tier = PrivilegeTier.ROOT
+        }
+        val shizukuBackend = object : PrivilegeBackend by fakeBackend {
+            override val tier = PrivilegeTier.SHIZUKU
+        }
+        val unprivilegedBackend = object : PrivilegeBackend by fakeBackend {
+            override val tier = PrivilegeTier.NONE
+        }
+        val privilegeManager = PrivilegeManager(
+            rootShellRunner = rootRunner,
+            shizukuShellRunner = shizukuRunner,
+            rootBackend = rootBackend,
+            shizukuBackend = shizukuBackend,
+            unprivilegedBackend = unprivilegedBackend
+        )
+        privilegeManager.refresh()
+
+        val ignoredFilter = IgnoredPackagesFilter(context)
+        val cgroupStrategy = CgroupForegroundStrategy(fakeBackend)
+        val dumpsysStrategy = DumpsysForegroundStrategy(fakeBackend)
+        val usageStatsStrategy = UsageStatsForegroundStrategy(context)
+        val foregroundDetector = ForegroundAppDetector(
+            privilegeManager = privilegeManager,
+            cgroupStrategy = cgroupStrategy,
+            dumpsysStrategy = dumpsysStrategy,
+            usageStatsStrategy = usageStatsStrategy,
+            ignoredPackagesFilter = ignoredFilter,
+            ioDispatcher = testDispatcher
+        )
+        val sfParser = SurfaceFlingerLatencyParser()
+        val gfxParser = GfxinfoFramestatsParser()
+        val fpsSampler = FpsSampler(
+            privilegeManager = privilegeManager,
+            foregroundAppDetector = foregroundDetector,
+            surfaceFlingerParser = sfParser,
+            gfxinfoParser = gfxParser,
+            ioDispatcher = testDispatcher
+        )
+
         overlayManager = FloatingOverlayManager(
             context = context,
             appSettingsRepository = appSettingsRepository,
@@ -88,6 +150,7 @@ class FloatingOverlayManagerTest {
             memoryControlEngine = memEngine,
             batteryRepository = batteryRepo,
             thermalRepository = thermalRepo,
+            fpsSampler = fpsSampler,
             mainDispatcher = testDispatcher,
             ioDispatcher = testDispatcher
         )

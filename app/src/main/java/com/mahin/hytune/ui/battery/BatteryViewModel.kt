@@ -168,10 +168,11 @@ class BatteryViewModel @Inject constructor(
         gpu: Boolean,
         batt: Boolean,
         temp: Boolean,
-        ram: Boolean
+        ram: Boolean,
+        fps: Boolean = true
     ) {
         viewModelScope.launch {
-            appSettingsRepository?.setOverlayMetricVisibility(cpu, gpu, batt, temp, ram)
+            appSettingsRepository?.setOverlayMetricVisibility(cpu, gpu, batt, temp, ram, fps)
         }
     }
 

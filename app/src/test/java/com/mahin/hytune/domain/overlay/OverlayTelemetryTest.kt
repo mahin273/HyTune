@@ -60,10 +60,26 @@ class OverlayTelemetryTest {
             showGpu = false,
             showBattery = false,
             showTemp = false,
-            showRam = false
+            showRam = false,
+            showFps = false
         )
         val telemetry = OverlayTelemetry()
         val compactText = telemetry.toCompactText(config)
         assertEquals("HyTune HUD", compactText)
+    }
+
+    @Test
+    fun toCompactText_includesFps_whenShowFpsEnabled() {
+        val config = OverlayConfig(
+            showFps = true,
+            showCpu = true
+        )
+        val telemetry = OverlayTelemetry(
+            fps = 59.8,
+            cpuFreqMhz = 2400
+        )
+        val compactText = telemetry.toCompactText(config)
+        assertTrue(compactText.contains("60 FPS"))
+        assertTrue(compactText.contains("CPU 2400MHz"))
     }
 }

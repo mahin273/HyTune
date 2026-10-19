@@ -16,6 +16,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.mahin.hytune.data.local.datastore.AppSettingsRepository
 import com.mahin.hytune.domain.battery.BatteryRepository
 import com.mahin.hytune.domain.cpu.CpuControlEngine
+import com.mahin.hytune.domain.fps.FpsSampler
 import com.mahin.hytune.domain.gpu.GpuControlEngine
 import com.mahin.hytune.domain.memory.MemoryControlEngine
 import com.mahin.hytune.domain.overlay.model.OverlayConfig
@@ -50,6 +51,7 @@ class FloatingOverlayManager @Inject constructor(
     private val memoryControlEngine: MemoryControlEngine,
     private val batteryRepository: BatteryRepository,
     private val thermalRepository: ThermalRepository,
+    private val fpsSampler: FpsSampler,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
@@ -86,6 +88,7 @@ class FloatingOverlayManager @Inject constructor(
                     showBattery = settings.overlayShowBattery,
                     showTemp = settings.overlayShowTemp,
                     showRam = settings.overlayShowRam,
+                    showFps = settings.overlayShowFps,
                     positionX = settings.overlayPositionX,
                     positionY = settings.overlayPositionY
                 )
@@ -227,6 +230,7 @@ class FloatingOverlayManager @Inject constructor(
     }
 
     private fun startTelemetrySampling() {
+        fpsSampler.start(1000L)
         telemetryJob?.cancel()
         telemetryJob = managerScope.launch(ioDispatcher) {
             while (isActive) {
@@ -237,6 +241,7 @@ class FloatingOverlayManager @Inject constructor(
     }
 
     private fun stopTelemetrySampling() {
+        fpsSampler.stop()
         telemetryJob?.cancel()
         telemetryJob = null
     }
@@ -315,6 +320,11 @@ class FloatingOverlayManager @Inject constructor(
         val peakTemp = thermalSnapshot?.hottestZone?.tempC ?: (batteryState?.temperatureC ?: 0f)
         val isThrottling = thermalSnapshot?.isThrottling ?: false
 
+        val fpsSnapshot = try {
+            fpsSampler.frameMetrics.value ?: fpsSampler.sampleOnce()
+        } catch (_: Exception) { null }
+        val currentFps = fpsSnapshot?.fps ?: 0.0
+
         _telemetry.value = OverlayTelemetry(
             cpuLoadPercent = cpuLoad,
             cpuFreqMhz = cpuFreq,
@@ -324,7 +334,8 @@ class FloatingOverlayManager @Inject constructor(
             ramTotalMb = totalMb,
             batteryPowerWatts = batteryState?.powerWatts ?: 0f,
             temperatureC = peakTemp,
-            isThrottling = isThrottling
+            isThrottling = isThrottling,
+            fps = currentFps
         )
     }
 }
