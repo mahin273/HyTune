@@ -37,6 +37,7 @@ import com.mahin.hytune.ui.safety.SafetyViewModel
 fun MoreScreen(
     safetyViewModel: SafetyViewModel = hiltViewModel(),
     daemonViewModel: DaemonViewModel = hiltViewModel(),
+    automationViewModel: com.mahin.hytune.ui.automation.AutomationViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -47,6 +48,7 @@ fun MoreScreen(
 
     val daemonState by daemonViewModel.daemonState.collectAsState()
     val isBatteryOptimizationIgnored by daemonViewModel.isBatteryOptimizationIgnored.collectAsState()
+    val automationState by automationViewModel.uiState.collectAsState()
 
     var showPanicConfirmDialog by remember { mutableStateOf(false) }
 
@@ -57,6 +59,15 @@ fun MoreScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Automation Rules Card
+        com.mahin.hytune.ui.automation.AutomationRulesCard(
+            uiState = automationState,
+            onToggleEngine = { automationViewModel.toggleEngine(it) },
+            onToggleRule = { id, enabled -> automationViewModel.toggleRuleEnabled(id, enabled) },
+            onDeleteRule = { automationViewModel.deleteRule(it) },
+            onSaveRule = { automationViewModel.saveRule(it) }
+        )
+
         // Daemon Foreground Service Card
         Card(
             modifier = Modifier.fillMaxWidth(),

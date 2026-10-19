@@ -32,6 +32,7 @@ class RoomDatabaseTest {
     private lateinit var chargingSessionDao: ChargingSessionDao
     private lateinit var thermalThrottleDao: com.mahin.hytune.data.local.db.dao.ThermalThrottleDao
     private lateinit var benchmarkSessionDao: com.mahin.hytune.data.local.db.dao.BenchmarkSessionDao
+    private lateinit var automationRuleDao: com.mahin.hytune.data.local.db.dao.AutomationRuleDao
 
     @Before
     fun setUp() {
@@ -44,6 +45,7 @@ class RoomDatabaseTest {
         chargingSessionDao = db.chargingSessionDao()
         thermalThrottleDao = db.thermalThrottleDao()
         benchmarkSessionDao = db.benchmarkSessionDao()
+        automationRuleDao = db.automationRuleDao()
     }
 
     @After
@@ -262,5 +264,60 @@ class RoomDatabaseTest {
         benchmarkSessionDao.clearAllSessions()
         val emptyList = benchmarkSessionDao.getAllSessions().first()
         assertTrue(emptyList.isEmpty())
+    }
+
+    @Test
+    fun automationRuleDao_insertUpdateQueryAndDelete() = runTest {
+        val r1 = com.mahin.hytune.data.local.db.entity.AutomationRuleEntity(
+            name = "Low Battery Saver",
+            isEnabled = true,
+            priority = 70,
+            triggerType = "BATTERY_PERCENT_BELOW",
+            triggerValue = "20",
+            actionType = "APPLY_PROFILE",
+            actionValue = "powersave",
+            cooldownSeconds = 30
+        )
+        val r2 = com.mahin.hytune.data.local.db.entity.AutomationRuleEntity(
+            name = "Thermal Emergency",
+            isEnabled = true,
+            priority = 90,
+            triggerType = "TEMPERATURE_ABOVE",
+            triggerValue = "45",
+            actionType = "APPLY_PROFILE",
+            actionValue = "powersave",
+            cooldownSeconds = 60
+        )
+
+        val id1 = automationRuleDao.insertRule(r1)
+        val id2 = automationRuleDao.insertRule(r2)
+
+        val allRules = automationRuleDao.getAllRules().first()
+        assertEquals(2, allRules.size)
+        // Ordered by priority DESC -> r2 (90) first, r1 (70) second
+        assertEquals("Thermal Emergency", allRules[0].name)
+        assertEquals("Low Battery Saver", allRules[1].name)
+
+        val enabledRules = automationRuleDao.getEnabledRules().first()
+        assertEquals(2, enabledRules.size)
+
+        automationRuleDao.updateEnabled(id1, false)
+        val enabledAfterDisable = automationRuleDao.getEnabledRules().first()
+        assertEquals(1, enabledAfterDisable.size)
+        assertEquals("Thermal Emergency", enabledAfterDisable.first().name)
+
+        val retrieved = automationRuleDao.getRuleById(id2)
+        assertNotNull(retrieved)
+        assertEquals(90, retrieved!!.priority)
+
+        automationRuleDao.updateLastTriggered(id2, 123456789L)
+        val afterTimestamp = automationRuleDao.getRuleById(id2)
+        assertEquals(123456789L, afterTimestamp!!.lastTriggeredEpochMs)
+
+        automationRuleDao.deleteRuleById(id2)
+        assertNull(automationRuleDao.getRuleById(id2))
+
+        automationRuleDao.clearAllRules()
+        assertTrue(automationRuleDao.getAllRules().first().isEmpty())
     }
 }
