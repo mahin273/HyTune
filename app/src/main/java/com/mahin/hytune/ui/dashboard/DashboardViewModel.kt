@@ -23,8 +23,20 @@ class DashboardViewModel @Inject constructor(
     private val samplerEngine: SystemSamplerEngine,
     private val settingsRepository: AppSettingsRepository,
     private val profileDao: ProfileDao,
-    private val privilegeManager: com.mahin.hytune.core.privilege.PrivilegeManager? = null
+    private val privilegeManager: com.mahin.hytune.core.privilege.PrivilegeManager? = null,
+    private val floatingOverlayManager: com.mahin.hytune.domain.overlay.FloatingOverlayManager? = null
 ) : ViewModel() {
+
+    val isOverlayShowing: StateFlow<Boolean> = floatingOverlayManager?.isShowing
+        ?: MutableStateFlow(false).asStateFlow()
+
+    fun toggleOverlay(): Job = viewModelScope.launch {
+        floatingOverlayManager?.toggleOverlay()
+    }
+
+    fun executePowerAction(command: String): Job = viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        com.topjohnwu.superuser.Shell.cmd(command).exec()
+    }
 
     private val _uiState = MutableStateFlow(
         DashboardUiState(

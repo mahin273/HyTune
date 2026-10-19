@@ -5,14 +5,18 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +38,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -41,6 +47,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mahin.hytune.ui.components.HyTuneLogo
+import com.mahin.hytune.ui.components.PowerMenuDialog
+import com.mahin.hytune.ui.dashboard.DashboardViewModel
 import com.mahin.hytune.ui.screens.AppsScreen
 import com.mahin.hytune.ui.screens.HomeScreen
 import com.mahin.hytune.ui.screens.MonitorScreen
@@ -56,12 +64,25 @@ import com.mahin.hytune.ui.theme.SurfaceVariantDark
 @Composable
 fun HyTuneAppShell(
     navController: NavHostController = rememberNavController(),
+    dashboardViewModel: DashboardViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val currentDestination = HyTuneDestination.fromRoute(currentRoute)
+    val uiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+    val isOverlayActive by dashboardViewModel.isOverlayShowing.collectAsStateWithLifecycle()
+
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
+    var showPowerDialog by rememberSaveable { mutableStateOf(false) }
+
+    fun displayLabel(destination: HyTuneDestination): String = when (destination) {
+        HyTuneDestination.Home -> "Overview"
+        HyTuneDestination.Tune -> "Tuner"
+        HyTuneDestination.Apps -> "Apps"
+        HyTuneDestination.Monitor -> "Monitor"
+        HyTuneDestination.More -> "Menu"
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -72,10 +93,11 @@ fun HyTuneAppShell(
                     .fillMaxWidth()
                     .background(BackgroundDark)
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // Left: Logo & Title
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -90,30 +112,74 @@ fun HyTuneAppShell(
                             ),
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        if (currentDestination != HyTuneDestination.Home) {
-                            Text(
-                                text = currentDestination.label,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = LimePrimaryDark,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
+                        Text(
+                            text = displayLabel(currentDestination),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = LimePrimaryDark,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
 
-                IconButton(
-                    onClick = { showSettingsSheet = true },
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(SurfaceVariantDark, RoundedCornerShape(12.dp))
-                        .border(1.dp, OutlineDark, RoundedCornerShape(12.dp))
+                // Right: Action Buttons (HUD Overlay toggle, Power Menu, Settings)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Settings",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    // Floating HUD Overlay Toggle
+                    IconButton(
+                        onClick = { dashboardViewModel.toggleOverlay() },
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(
+                                if (isOverlayActive) Color(0xFF1E2818) else SurfaceVariantDark,
+                                RoundedCornerShape(10.dp)
+                            )
+                            .border(
+                                1.dp,
+                                if (isOverlayActive) LimePrimaryDark else OutlineDark,
+                                RoundedCornerShape(10.dp)
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Speed,
+                            contentDescription = "HUD Overlay",
+                            tint = if (isOverlayActive) LimePrimaryDark else OnSurfaceVariantDark,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Power Menu Dialog Button
+                    IconButton(
+                        onClick = { showPowerDialog = true },
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(SurfaceVariantDark, RoundedCornerShape(10.dp))
+                            .border(1.dp, OutlineDark, RoundedCornerShape(10.dp))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PowerSettingsNew,
+                            contentDescription = "Power Menu",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Settings Button
+                    IconButton(
+                        onClick = { showSettingsSheet = true },
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(SurfaceVariantDark, RoundedCornerShape(10.dp))
+                            .border(1.dp, OutlineDark, RoundedCornerShape(10.dp))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         },
@@ -153,7 +219,7 @@ fun HyTuneAppShell(
                         },
                         label = {
                             Text(
-                                text = destination.label,
+                                text = displayLabel(destination),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
                             )
@@ -193,7 +259,19 @@ fun HyTuneAppShell(
                 )
             }
             composable(HyTuneDestination.Tune.route) {
-                TuneScreen()
+                TuneScreen(
+                    onNavigateToTab = { destination ->
+                        if (currentRoute != destination.route) {
+                            navController.navigate(destination.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    }
+                )
             }
             composable(HyTuneDestination.Apps.route) {
                 AppsScreen()
@@ -202,15 +280,38 @@ fun HyTuneAppShell(
                 MonitorScreen()
             }
             composable(HyTuneDestination.More.route) {
-                MoreScreen()
+                MoreScreen(
+                    onNavigateToTab = { destination ->
+                        if (currentRoute != destination.route) {
+                            navController.navigate(destination.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    }
+                )
             }
+        }
+
+        if (showPowerDialog) {
+            PowerMenuDialog(
+                onDismissRequest = { showPowerDialog = false },
+                onExecuteAction = { action ->
+                    dashboardViewModel.executePowerAction(action.command)
+                    showPowerDialog = false
+                }
+            )
         }
 
         if (showSettingsSheet) {
             SettingsBottomSheet(
-                onDismissRequest = { showSettingsSheet = false }
+                onDismissRequest = { showSettingsSheet = false },
+                privilegeTier = uiState.privilegeTier,
+                onRequestRoot = { dashboardViewModel.requestRoot() }
             )
         }
     }
 }
-
