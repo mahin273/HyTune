@@ -38,6 +38,8 @@ fun MoreScreen(
     safetyViewModel: SafetyViewModel = hiltViewModel(),
     daemonViewModel: DaemonViewModel = hiltViewModel(),
     automationViewModel: com.mahin.hytune.ui.automation.AutomationViewModel = hiltViewModel(),
+    scriptViewModel: com.mahin.hytune.ui.tools.ScriptViewModel = hiltViewModel(),
+    sysfsViewModel: com.mahin.hytune.ui.tools.SysfsViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -49,6 +51,8 @@ fun MoreScreen(
     val daemonState by daemonViewModel.daemonState.collectAsState()
     val isBatteryOptimizationIgnored by daemonViewModel.isBatteryOptimizationIgnored.collectAsState()
     val automationState by automationViewModel.uiState.collectAsState()
+    val scriptState by scriptViewModel.uiState.collectAsState()
+    val sysfsState by sysfsViewModel.uiState.collectAsState()
 
     var showPanicConfirmDialog by remember { mutableStateOf(false) }
 
@@ -66,6 +70,26 @@ fun MoreScreen(
             onToggleRule = { id, enabled -> automationViewModel.toggleRuleEnabled(id, enabled) },
             onDeleteRule = { automationViewModel.deleteRule(it) },
             onSaveRule = { automationViewModel.saveRule(it) }
+        )
+
+        // Custom Script Library Card
+        com.mahin.hytune.ui.tools.ScriptLibraryCard(
+            uiState = scriptState,
+            onRunScript = { scriptViewModel.executeScript(it) },
+            onSaveScript = { scriptViewModel.saveScript(it) },
+            onDeleteScript = { scriptViewModel.deleteScript(it) },
+            onToggleBoot = { id, boot -> scriptViewModel.toggleRunAtBoot(id, boot) },
+            onDismissResult = { scriptViewModel.clearExecutionResult() }
+        )
+
+        // Raw Sysfs Browser & Editor Card
+        com.mahin.hytune.ui.tools.SysfsEditorCard(
+            uiState = sysfsState,
+            onNavigateTo = { sysfsViewModel.navigateTo(it) },
+            onNavigateUp = { sysfsViewModel.navigateUp() },
+            onSelectNode = { sysfsViewModel.selectNode(it) },
+            onWriteNode = { path, value -> sysfsViewModel.writeNodeValue(path, value) },
+            onClearSelectedNode = { sysfsViewModel.clearSelectedNode() }
         )
 
         // Daemon Foreground Service Card
