@@ -11,8 +11,11 @@ import com.mahin.hytune.domain.detection.GameClassifier
 import com.mahin.hytune.domain.profile.AppRuleRepository
 import com.mahin.hytune.domain.profile.ProfileRepository
 import com.mahin.hytune.ui.model.AppItemUiModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -42,6 +45,7 @@ class PerAppRulesViewModelTest {
     val tempFolder = TemporaryFolder()
 
     private val testDispatcher = UnconfinedTestDispatcher()
+    private lateinit var dataStoreScope: CoroutineScope
     private lateinit var context: Context
     private lateinit var db: HyTuneDatabase
     private lateinit var appRuleRepository: AppRuleRepository
@@ -61,7 +65,9 @@ class PerAppRulesViewModelTest {
             .setTransactionExecutor(directExecutor)
             .build()
 
+        dataStoreScope = CoroutineScope(testDispatcher + SupervisorJob())
         val testDataStore = PreferenceDataStoreFactory.create(
+            scope = dataStoreScope,
             produceFile = { tempFolder.newFile("test_vm.preferences_pb") }
         )
         appSettingsRepository = AppSettingsRepository(testDataStore)
@@ -81,6 +87,7 @@ class PerAppRulesViewModelTest {
 
     @After
     fun tearDown() {
+        dataStoreScope.cancel()
         db.close()
         Dispatchers.resetMain()
     }
@@ -127,7 +134,7 @@ class PerAppRulesViewModelTest {
 
     @Test
     fun togglePerAppProfilesEnabled_updatesPreference() = runTest(testDispatcher) {
-        viewModel.togglePerAppProfilesEnabled(true)
+        viewModel.togglePerAppProfilesEnabled(true).join()
         val settings = appSettingsRepository.settings.first { it.perAppProfilesEnabled }
         assertTrue(settings.perAppProfilesEnabled)
     }
@@ -139,7 +146,7 @@ class PerAppRulesViewModelTest {
         )
         assertNotNull(appRuleRepository.getRuleDirect("com.test.remove"))
 
-        viewModel.removeAppRule("com.test.remove")
+        viewModel.removeAppRule("com.test.remove").join()
         val deleted = appRuleRepository.getRule("com.test.remove").first { it == null }
         assertNull(deleted)
     }
