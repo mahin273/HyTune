@@ -9,6 +9,7 @@ data class OverlayConfig(
     val showBattery: Boolean = true,
     val showTemp: Boolean = true,
     val showRam: Boolean = true,
+    val showFps: Boolean = true,
     val positionX: Int = 100,
     val positionY: Int = 200
 )

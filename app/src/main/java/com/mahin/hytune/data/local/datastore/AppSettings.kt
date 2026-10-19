@@ -28,6 +28,7 @@ data class AppSettings(
     val overlayShowBattery: Boolean = true,
     val overlayShowTemp: Boolean = true,
     val overlayShowRam: Boolean = true,
+    val overlayShowFps: Boolean = true,
     val overlayPositionX: Int = 100,
     val overlayPositionY: Int = 200
 )

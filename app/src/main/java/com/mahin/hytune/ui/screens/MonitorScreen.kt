@@ -66,8 +66,8 @@ fun MonitorScreen(
             onToggleShowing = { batteryViewModel.toggleOverlay(it) },
             onToggleCompact = { batteryViewModel.setOverlayCompactMode(it) },
             onOpacityChange = { batteryViewModel.setOverlayOpacity(it) },
-            onMetricToggle = { cpu, gpu, batt, temp, ram ->
-                batteryViewModel.setOverlayMetricVisibility(cpu, gpu, batt, temp, ram)
+            onMetricToggle = { cpu, gpu, batt, temp, ram, fps ->
+                batteryViewModel.setOverlayMetricVisibility(cpu, gpu, batt, temp, ram, fps)
             }
         )
 

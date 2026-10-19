@@ -49,6 +49,7 @@ class AppSettingsRepository @Inject constructor(
         val OVERLAY_SHOW_BATTERY = booleanPreferencesKey("overlay_show_battery")
         val OVERLAY_SHOW_TEMP = booleanPreferencesKey("overlay_show_temp")
         val OVERLAY_SHOW_RAM = booleanPreferencesKey("overlay_show_ram")
+        val OVERLAY_SHOW_FPS = booleanPreferencesKey("overlay_show_fps")
         val OVERLAY_POS_X = intPreferencesKey("overlay_pos_x")
         val OVERLAY_POS_Y = intPreferencesKey("overlay_pos_y")
     }
@@ -90,6 +91,7 @@ class AppSettingsRepository @Inject constructor(
                 overlayShowBattery = preferences[PreferencesKeys.OVERLAY_SHOW_BATTERY] ?: true,
                 overlayShowTemp = preferences[PreferencesKeys.OVERLAY_SHOW_TEMP] ?: true,
                 overlayShowRam = preferences[PreferencesKeys.OVERLAY_SHOW_RAM] ?: true,
+                overlayShowFps = preferences[PreferencesKeys.OVERLAY_SHOW_FPS] ?: true,
                 overlayPositionX = preferences[PreferencesKeys.OVERLAY_POS_X] ?: 100,
                 overlayPositionY = preferences[PreferencesKeys.OVERLAY_POS_Y] ?: 200
             )
@@ -243,7 +245,8 @@ class AppSettingsRepository @Inject constructor(
         showGpu: Boolean,
         showBattery: Boolean,
         showTemp: Boolean,
-        showRam: Boolean
+        showRam: Boolean,
+        showFps: Boolean = true
     ) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.OVERLAY_SHOW_CPU] = showCpu
@@ -251,6 +254,7 @@ class AppSettingsRepository @Inject constructor(
             preferences[PreferencesKeys.OVERLAY_SHOW_BATTERY] = showBattery
             preferences[PreferencesKeys.OVERLAY_SHOW_TEMP] = showTemp
             preferences[PreferencesKeys.OVERLAY_SHOW_RAM] = showRam
+            preferences[PreferencesKeys.OVERLAY_SHOW_FPS] = showFps
         }
     }
 }

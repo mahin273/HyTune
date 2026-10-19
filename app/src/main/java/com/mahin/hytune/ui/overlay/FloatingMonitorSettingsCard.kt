@@ -1,10 +1,12 @@
 package com.mahin.hytune.ui.overlay
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,7 +30,7 @@ fun FloatingMonitorSettingsCard(
     onToggleShowing: (Boolean) -> Unit,
     onToggleCompact: (Boolean) -> Unit,
     onOpacityChange: (Float) -> Unit,
-    onMetricToggle: (cpu: Boolean, gpu: Boolean, batt: Boolean, temp: Boolean, ram: Boolean) -> Unit,
+    onMetricToggle: (cpu: Boolean, gpu: Boolean, batt: Boolean, temp: Boolean, ram: Boolean, fps: Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -127,32 +129,39 @@ fun FloatingMonitorSettingsCard(
                     )
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         FilterChip(
+                            selected = config.showFps,
+                            onClick = { onMetricToggle(config.showCpu, config.showGpu, config.showBattery, config.showTemp, config.showRam, !config.showFps) },
+                            label = { Text("FPS", style = MaterialTheme.typography.labelSmall) }
+                        )
+                        FilterChip(
                             selected = config.showCpu,
-                            onClick = { onMetricToggle(!config.showCpu, config.showGpu, config.showBattery, config.showTemp, config.showRam) },
+                            onClick = { onMetricToggle(!config.showCpu, config.showGpu, config.showBattery, config.showTemp, config.showRam, config.showFps) },
                             label = { Text("CPU", style = MaterialTheme.typography.labelSmall) }
                         )
                         FilterChip(
                             selected = config.showGpu,
-                            onClick = { onMetricToggle(config.showCpu, !config.showGpu, config.showBattery, config.showTemp, config.showRam) },
+                            onClick = { onMetricToggle(config.showCpu, !config.showGpu, config.showBattery, config.showTemp, config.showRam, config.showFps) },
                             label = { Text("GPU", style = MaterialTheme.typography.labelSmall) }
                         )
                         FilterChip(
                             selected = config.showBattery,
-                            onClick = { onMetricToggle(config.showCpu, config.showGpu, !config.showBattery, config.showTemp, config.showRam) },
+                            onClick = { onMetricToggle(config.showCpu, config.showGpu, !config.showBattery, config.showTemp, config.showRam, config.showFps) },
                             label = { Text("Power", style = MaterialTheme.typography.labelSmall) }
                         )
                         FilterChip(
                             selected = config.showTemp,
-                            onClick = { onMetricToggle(config.showCpu, config.showGpu, config.showBattery, !config.showTemp, config.showRam) },
+                            onClick = { onMetricToggle(config.showCpu, config.showGpu, config.showBattery, !config.showTemp, config.showRam, config.showFps) },
                             label = { Text("Thermals", style = MaterialTheme.typography.labelSmall) }
                         )
                         FilterChip(
                             selected = config.showRam,
-                            onClick = { onMetricToggle(config.showCpu, config.showGpu, config.showBattery, config.showTemp, !config.showRam) },
+                            onClick = { onMetricToggle(config.showCpu, config.showGpu, config.showBattery, config.showTemp, !config.showRam, config.showFps) },
                             label = { Text("RAM", style = MaterialTheme.typography.labelSmall) }
                         )
                     }

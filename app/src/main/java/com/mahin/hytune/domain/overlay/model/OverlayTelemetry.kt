@@ -9,10 +9,14 @@ data class OverlayTelemetry(
     val ramTotalMb: Int = 0,
     val batteryPowerWatts: Float = 0f,
     val temperatureC: Float = 0f,
-    val isThrottling: Boolean = false
+    val isThrottling: Boolean = false,
+    val fps: Double = 0.0
 ) {
     fun toCompactText(config: OverlayConfig): String {
         val parts = mutableListOf<String>()
+        if (config.showFps && fps > 0.0) {
+            parts.add(String.format(java.util.Locale.US, "%.0f FPS", fps))
+        }
         if (config.showCpu) {
             val freqStr = if (cpuFreqMhz > 0) "${cpuFreqMhz}MHz" else "${cpuLoadPercent}%"
             parts.add("CPU $freqStr")
