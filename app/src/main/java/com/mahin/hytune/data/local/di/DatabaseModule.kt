@@ -37,7 +37,8 @@ object DatabaseModule {
             .addMigrations(
                 HyTuneDatabase.MIGRATION_1_2,
                 HyTuneDatabase.MIGRATION_2_3,
-                HyTuneDatabase.MIGRATION_3_4
+                HyTuneDatabase.MIGRATION_3_4,
+                HyTuneDatabase.MIGRATION_4_5
             )
             .fallbackToDestructiveMigration()
             .build()
@@ -60,6 +61,9 @@ object DatabaseModule {
 
     @Provides
     fun provideBenchmarkSessionDao(database: HyTuneDatabase): BenchmarkSessionDao = database.benchmarkSessionDao()
+
+    @Provides
+    fun provideAutomationRuleDao(database: HyTuneDatabase): com.mahin.hytune.data.local.db.dao.AutomationRuleDao = database.automationRuleDao()
 
     @Provides
     @Singleton

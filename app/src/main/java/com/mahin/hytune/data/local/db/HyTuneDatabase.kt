@@ -26,9 +26,10 @@ import com.mahin.hytune.data.local.db.entity.ThermalThrottleEventEntity
         FreezeGroupEntity::class,
         FreezeGroupPackageCrossRef::class,
         ThermalThrottleEventEntity::class,
-        BenchmarkSessionEntity::class
+        BenchmarkSessionEntity::class,
+        com.mahin.hytune.data.local.db.entity.AutomationRuleEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class HyTuneDatabase : RoomDatabase() {
@@ -38,6 +39,7 @@ abstract class HyTuneDatabase : RoomDatabase() {
     abstract fun freezeGroupDao(): FreezeGroupDao
     abstract fun thermalThrottleDao(): ThermalThrottleDao
     abstract fun benchmarkSessionDao(): BenchmarkSessionDao
+    abstract fun automationRuleDao(): com.mahin.hytune.data.local.db.dao.AutomationRuleDao
 
     companion object {
         const val DATABASE_NAME = "hytune.db"
@@ -121,6 +123,30 @@ abstract class HyTuneDatabase : RoomDatabase() {
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_benchmark_sessions_startTimeEpochMs` ON `benchmark_sessions` (`startTimeEpochMs`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_benchmark_sessions_packageName` ON `benchmark_sessions` (`packageName`)")
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `automation_rules` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `isEnabled` INTEGER NOT NULL,
+                        `priority` INTEGER NOT NULL,
+                        `triggerType` TEXT NOT NULL,
+                        `triggerValue` TEXT NOT NULL,
+                        `conditionJson` TEXT NOT NULL,
+                        `actionType` TEXT NOT NULL,
+                        `actionValue` TEXT NOT NULL,
+                        `cooldownSeconds` INTEGER NOT NULL,
+                        `lastTriggeredEpochMs` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_automation_rules_isEnabled` ON `automation_rules` (`isEnabled`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_automation_rules_priority` ON `automation_rules` (`priority`)")
             }
         }
     }
