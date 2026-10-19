@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.mahin.hytune.ui.common.telemetryAnnouncement
 import com.mahin.hytune.ui.theme.MonospaceCodeStyle
 
 @Composable
@@ -30,7 +31,9 @@ fun MetricCard(
     baselineMax: Float? = null
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .telemetryAnnouncement(title, primaryValue),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )

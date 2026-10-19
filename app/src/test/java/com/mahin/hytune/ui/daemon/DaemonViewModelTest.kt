@@ -70,7 +70,7 @@ class DaemonViewModelTest {
     @Test
     fun initialState_matchesControllerAndSettings() = runTest(testDispatcher) {
         assertEquals(DaemonState.STOPPED, viewModel.daemonState.value)
-        val settings = viewModel.appSettings.first()
+        val settings = appSettingsRepository.settings.first()
         assertFalse(settings.daemonServiceEnabled)
         assertTrue(settings.daemonNotificationDetailsEnabled)
     }

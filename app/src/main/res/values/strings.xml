@@ -1,3 +1,94 @@
 <resources>
+    <!-- Application -->
     <string name="app_name">HyTune</string>
+    <string name="app_tagline">Android Kernel and SoC Tuning Engine</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_cpu">CPU</string>
+    <string name="nav_gpu">GPU</string>
+    <string name="nav_battery">Battery</string>
+    <string name="nav_automation">Automation</string>
+    <string name="nav_scripts">Scripts</string>
+    <string name="nav_freeze">Freeze</string>
+    <string name="nav_diagnostics">Diagnostics</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Profiles -->
+    <string name="profile_balance">Balance</string>
+    <string name="profile_balance_desc">Optimized for daily productivity, balanced frequencies and thermals</string>
+    <string name="profile_performance">Performance</string>
+    <string name="profile_performance_desc">Sustained peak clocks, aggressive governor ramp-up for gaming</string>
+    <string name="profile_fast">Fast</string>
+    <string name="profile_fast_desc">Immediate burst latency with conservative energy floors</string>
+    <string name="profile_powersave">PowerSave</string>
+    <string name="profile_powersave_desc">Minimum clock floors, throttled governor for maximum battery endurance</string>
+    <string name="profile_custom">Custom</string>
+    <string name="profile_active_badge">Active Profile</string>
+    <string name="profile_applied_success">Successfully applied profile %1$s</string>
+    <string name="profile_apply_failed">Failed to apply profile %1$s</string>
+
+    <!-- Telemetry & Metrics -->
+    <string name="metric_cpu_load">CPU Load</string>
+    <string name="metric_cpu_freq">CPU Frequency</string>
+    <string name="metric_cpu_governor">Governor</string>
+    <string name="metric_gpu_load">GPU Load</string>
+    <string name="metric_gpu_clock">GPU Clock</string>
+    <string name="metric_battery_level">Battery Level</string>
+    <string name="metric_battery_temp">Battery Temp</string>
+    <string name="metric_battery_current">Current Flow</string>
+    <string name="metric_battery_voltage">Voltage</string>
+    <string name="metric_ram_available">Available RAM</string>
+    <string name="metric_fps">Frame Rate</string>
+    <string name="metric_fps_avg">Avg FPS</string>
+    <string name="metric_fps_one_low">1% Low</string>
+    <string name="metric_fps_point_one_low">0.1% Low</string>
+    <string name="val_unavailable">N/A</string>
+
+    <!-- Actions -->
+    <string name="action_apply">Apply</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_revert">Revert</string>
+    <string name="action_revert_countdown">Reverting in %1$d seconds</string>
+    <string name="action_keep">Keep Changes</string>
+    <string name="action_cycle_profile">Next Profile</string>
+    <string name="action_toggle_overlay">Toggle Overlay</string>
+    <string name="action_export_backup">Export Backup</string>
+    <string name="action_import_backup">Import Backup</string>
+    <string name="action_run_diagnostics">Run Diagnostics</string>
+    <string name="action_stop">Stop</string>
+
+    <!-- Diagnostics -->
+    <string name="diag_title">Hardware Diagnostics</string>
+    <string name="diag_status_pass">PASS</string>
+    <string name="diag_status_warning">WARNING</string>
+    <string name="diag_status_fail">FAIL</string>
+    <string name="diag_subsystem_cpu">CPU Subsystem</string>
+    <string name="diag_subsystem_thermal">Thermal Subsystem</string>
+    <string name="diag_subsystem_memory">Memory Subsystem</string>
+    <string name="diag_subsystem_battery">Battery Subsystem</string>
+    <string name="diag_subsystem_sensors">Sensors Subsystem</string>
+    <string name="diag_subsystem_display">Display Subsystem</string>
+    <string name="diag_touch_sampling">Touch Polling Rate</string>
+    <string name="diag_touch_jitter">Touch Jitter</string>
+    <string name="diag_dead_pixel_instruction">Tap screen to cycle primary colors and inspect for dead pixels</string>
+
+    <!-- Accessibility / TalkBack Semantics -->
+    <string name="a11y_nav_tab">%1$s tab</string>
+    <string name="a11y_profile_chip">%1$s profile. %2$s</string>
+    <string name="a11y_profile_active">Active profile: %1$s</string>
+    <string name="a11y_profile_inactive">Select %1$s profile</string>
+    <string name="a11y_metric_announcement">%1$s: %2$s</string>
+    <string name="a11y_slider_semantics">%1$s slider, currently %2$s</string>
+    <string name="a11y_quick_toggle">%1$s switch, currently %2$s</string>
+    <string name="a11y_btn_open_app">Open HyTune application</string>
+    <string name="a11y_btn_cycle_profile">Cycle to next performance profile</string>
+    <string name="a11y_btn_toggle_overlay">Toggle floating HUD overlay</string>
+    <string name="a11y_state_enabled">Enabled</string>
+    <string name="a11y_state_disabled">Disabled</string>
+    <string name="a11y_loading">Loading hardware telemetry</string>
 </resources>

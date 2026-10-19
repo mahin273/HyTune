@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mahin.hytune.ui.common.loadingSemantics
 import com.mahin.hytune.ui.components.MetricCard
 import com.mahin.hytune.ui.components.ProfileModeSelector
 import com.mahin.hytune.ui.components.SocInfoCard
@@ -123,7 +124,10 @@ fun HomeScreen(
                     .padding(vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                CircularProgressIndicator(
+                    modifier = Modifier.loadingSemantics(),
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
