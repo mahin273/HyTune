@@ -5,11 +5,13 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.mahin.hytune.data.local.db.dao.AppRuleDao
+import com.mahin.hytune.data.local.db.dao.BenchmarkSessionDao
 import com.mahin.hytune.data.local.db.dao.ChargingSessionDao
 import com.mahin.hytune.data.local.db.dao.FreezeGroupDao
 import com.mahin.hytune.data.local.db.dao.ProfileDao
 import com.mahin.hytune.data.local.db.dao.ThermalThrottleDao
 import com.mahin.hytune.data.local.db.entity.AppRuleEntity
+import com.mahin.hytune.data.local.db.entity.BenchmarkSessionEntity
 import com.mahin.hytune.data.local.db.entity.ChargingSessionEntity
 import com.mahin.hytune.data.local.db.entity.FreezeGroupEntity
 import com.mahin.hytune.data.local.db.entity.FreezeGroupPackageCrossRef
@@ -23,9 +25,10 @@ import com.mahin.hytune.data.local.db.entity.ThermalThrottleEventEntity
         ChargingSessionEntity::class,
         FreezeGroupEntity::class,
         FreezeGroupPackageCrossRef::class,
-        ThermalThrottleEventEntity::class
+        ThermalThrottleEventEntity::class,
+        BenchmarkSessionEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class HyTuneDatabase : RoomDatabase() {
@@ -34,6 +37,7 @@ abstract class HyTuneDatabase : RoomDatabase() {
     abstract fun chargingSessionDao(): ChargingSessionDao
     abstract fun freezeGroupDao(): FreezeGroupDao
     abstract fun thermalThrottleDao(): ThermalThrottleDao
+    abstract fun benchmarkSessionDao(): BenchmarkSessionDao
 
     companion object {
         const val DATABASE_NAME = "hytune.db"
@@ -82,6 +86,41 @@ abstract class HyTuneDatabase : RoomDatabase() {
                     """.trimIndent()
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_thermal_throttle_events_timestampEpochMs` ON `thermal_throttle_events` (`timestampEpochMs`)")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `benchmark_sessions` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `packageName` TEXT NOT NULL,
+                        `appName` TEXT NOT NULL,
+                        `startTimeEpochMs` INTEGER NOT NULL,
+                        `endTimeEpochMs` INTEGER NOT NULL,
+                        `durationSeconds` INTEGER NOT NULL,
+                        `avgFps` REAL NOT NULL,
+                        `onePercentLowFps` REAL NOT NULL,
+                        `pointOnePercentLowFps` REAL NOT NULL,
+                        `minFps` REAL NOT NULL,
+                        `maxFps` REAL NOT NULL,
+                        `totalFrames` INTEGER NOT NULL,
+                        `jankCount` INTEGER NOT NULL,
+                        `jankPercentage` REAL NOT NULL,
+                        `stutterScore` REAL NOT NULL,
+                        `avgFrameTimeMs` REAL NOT NULL,
+                        `avgCpuLoadPercent` INTEGER NOT NULL,
+                        `avgGpuLoadPercent` INTEGER NOT NULL,
+                        `avgBatteryWatts` REAL NOT NULL,
+                        `peakTemperatureC` REAL NOT NULL,
+                        `histogramJson` TEXT NOT NULL,
+                        `telemetrySeriesJson` TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_benchmark_sessions_startTimeEpochMs` ON `benchmark_sessions` (`startTimeEpochMs`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_benchmark_sessions_packageName` ON `benchmark_sessions` (`packageName`)")
             }
         }
     }

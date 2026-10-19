@@ -26,16 +26,20 @@ import com.mahin.hytune.ui.battery.BatteryCard
 import com.mahin.hytune.ui.battery.BatteryViewModel
 import com.mahin.hytune.ui.battery.ChargeControlCard
 import com.mahin.hytune.ui.battery.ChargingSessionsCard
+import com.mahin.hytune.ui.benchmark.BenchmarkRecorderCard
+import com.mahin.hytune.ui.benchmark.BenchmarkViewModel
 import com.mahin.hytune.ui.overlay.FloatingMonitorSettingsCard
 import com.mahin.hytune.ui.thermal.ThermalZonesCard
 
 @Composable
 fun MonitorScreen(
     batteryViewModel: BatteryViewModel = hiltViewModel(),
+    benchmarkViewModel: BenchmarkViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val batteryUiState by batteryViewModel.uiState.collectAsState()
+    val benchmarkUiState by benchmarkViewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
     val requestOverlayPermission = {
@@ -69,6 +73,18 @@ fun MonitorScreen(
             onMetricToggle = { cpu, gpu, batt, temp, ram, fps ->
                 batteryViewModel.setOverlayMetricVisibility(cpu, gpu, batt, temp, ram, fps)
             }
+        )
+
+        // Gaming & App Benchmark Recorder
+        BenchmarkRecorderCard(
+            uiState = benchmarkUiState,
+            onStartRecording = { pkg, name -> benchmarkViewModel.startRecording(pkg, name) },
+            onStopRecording = { benchmarkViewModel.stopRecording() },
+            onCancelRecording = { benchmarkViewModel.cancelRecording() },
+            onDeleteSession = { benchmarkViewModel.deleteSession(it) },
+            onClearAllSessions = { benchmarkViewModel.clearAllSessions() },
+            onExportCsv = { benchmarkViewModel.exportSessionCsv(it) },
+            onDismissCsvDialog = { benchmarkViewModel.clearExportedCsv() }
         )
 
         // Battery Real-time Telemetry

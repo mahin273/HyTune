@@ -31,6 +31,7 @@ class RoomDatabaseTest {
     private lateinit var appRuleDao: AppRuleDao
     private lateinit var chargingSessionDao: ChargingSessionDao
     private lateinit var thermalThrottleDao: com.mahin.hytune.data.local.db.dao.ThermalThrottleDao
+    private lateinit var benchmarkSessionDao: com.mahin.hytune.data.local.db.dao.BenchmarkSessionDao
 
     @Before
     fun setUp() {
@@ -42,6 +43,7 @@ class RoomDatabaseTest {
         appRuleDao = db.appRuleDao()
         chargingSessionDao = db.chargingSessionDao()
         thermalThrottleDao = db.thermalThrottleDao()
+        benchmarkSessionDao = db.benchmarkSessionDao()
     }
 
     @After
@@ -185,5 +187,80 @@ class RoomDatabaseTest {
         thermalThrottleDao.clearAllEvents()
         val cleared = thermalThrottleDao.getAllEvents().first()
         assertTrue(cleared.isEmpty())
+    }
+
+    @Test
+    fun benchmarkSessionDao_insertQueryAndDelete() = runTest {
+        val s1 = com.mahin.hytune.data.local.db.entity.BenchmarkSessionEntity(
+            packageName = "com.miHoYo.GenshinImpact",
+            appName = "Genshin Impact",
+            startTimeEpochMs = 1000L,
+            endTimeEpochMs = 61000L,
+            durationSeconds = 60,
+            avgFps = 58.4,
+            onePercentLowFps = 42.1,
+            pointOnePercentLowFps = 28.5,
+            minFps = 22.0,
+            maxFps = 61.2,
+            totalFrames = 3500,
+            jankCount = 42,
+            jankPercentage = 1.2,
+            stutterScore = 2.4,
+            avgFrameTimeMs = 17.1,
+            avgCpuLoadPercent = 45,
+            avgGpuLoadPercent = 78,
+            avgBatteryWatts = 5.2f,
+            peakTemperatureC = 41.5f,
+            histogramJson = "[]",
+            telemetrySeriesJson = "[]"
+        )
+        val s2 = com.mahin.hytune.data.local.db.entity.BenchmarkSessionEntity(
+            packageName = "com.activision.callofduty.shooter",
+            appName = "Call of Duty Mobile",
+            startTimeEpochMs = 70000L,
+            endTimeEpochMs = 130000L,
+            durationSeconds = 60,
+            avgFps = 118.2,
+            onePercentLowFps = 95.0,
+            pointOnePercentLowFps = 72.0,
+            minFps = 65.0,
+            maxFps = 121.0,
+            totalFrames = 7100,
+            jankCount = 15,
+            jankPercentage = 0.2,
+            stutterScore = 0.5,
+            avgFrameTimeMs = 8.4,
+            avgCpuLoadPercent = 52,
+            avgGpuLoadPercent = 88,
+            avgBatteryWatts = 6.8f,
+            peakTemperatureC = 43.0f,
+            histogramJson = "[]",
+            telemetrySeriesJson = "[]"
+        )
+
+        val id1 = benchmarkSessionDao.insertSession(s1)
+        val id2 = benchmarkSessionDao.insertSession(s2)
+
+        val allSessions = benchmarkSessionDao.getAllSessions().first()
+        assertEquals(2, allSessions.size)
+        // Ordered by startTimeEpochMs DESC -> s2 first
+        assertEquals("com.activision.callofduty.shooter", allSessions[0].packageName)
+        assertEquals("com.miHoYo.GenshinImpact", allSessions[1].packageName)
+
+        val genshinSessions = benchmarkSessionDao.getSessionsForPackage("com.miHoYo.GenshinImpact").first()
+        assertEquals(1, genshinSessions.size)
+        assertEquals("Genshin Impact", genshinSessions.first().appName)
+
+        val fetched = benchmarkSessionDao.getSessionById(id1)
+        assertNotNull(fetched)
+        assertEquals(58.4, fetched!!.avgFps, 0.01)
+
+        benchmarkSessionDao.deleteSessionById(id1)
+        val afterDelete = benchmarkSessionDao.getSessionById(id1)
+        assertNull(afterDelete)
+
+        benchmarkSessionDao.clearAllSessions()
+        val emptyList = benchmarkSessionDao.getAllSessions().first()
+        assertTrue(emptyList.isEmpty())
     }
 }
