@@ -52,6 +52,10 @@ class AppSettingsRepository @Inject constructor(
         val OVERLAY_SHOW_FPS = booleanPreferencesKey("overlay_show_fps")
         val OVERLAY_POS_X = intPreferencesKey("overlay_pos_x")
         val OVERLAY_POS_Y = intPreferencesKey("overlay_pos_y")
+        val APPLY_ON_BOOT = booleanPreferencesKey("apply_on_boot")
+        val BOOT_APPLY_DELAY_SECONDS = intPreferencesKey("boot_apply_delay_seconds")
+        val BOOT_APPLY_NOTIFICATION_ENABLED = booleanPreferencesKey("boot_apply_notification_enabled")
+        val LAST_BOOT_APPLY_STATUS = stringPreferencesKey("last_boot_apply_status")
     }
 
     val settings: Flow<AppSettings> = dataStore.data
@@ -93,7 +97,11 @@ class AppSettingsRepository @Inject constructor(
                 overlayShowRam = preferences[PreferencesKeys.OVERLAY_SHOW_RAM] ?: true,
                 overlayShowFps = preferences[PreferencesKeys.OVERLAY_SHOW_FPS] ?: true,
                 overlayPositionX = preferences[PreferencesKeys.OVERLAY_POS_X] ?: 100,
-                overlayPositionY = preferences[PreferencesKeys.OVERLAY_POS_Y] ?: 200
+                overlayPositionY = preferences[PreferencesKeys.OVERLAY_POS_Y] ?: 200,
+                applyOnBoot = preferences[PreferencesKeys.APPLY_ON_BOOT] ?: false,
+                bootApplyDelaySeconds = preferences[PreferencesKeys.BOOT_APPLY_DELAY_SECONDS] ?: 30,
+                bootApplyNotificationEnabled = preferences[PreferencesKeys.BOOT_APPLY_NOTIFICATION_ENABLED] ?: true,
+                lastBootApplyStatus = preferences[PreferencesKeys.LAST_BOOT_APPLY_STATUS]
             )
         }
 
@@ -255,6 +263,34 @@ class AppSettingsRepository @Inject constructor(
             preferences[PreferencesKeys.OVERLAY_SHOW_TEMP] = showTemp
             preferences[PreferencesKeys.OVERLAY_SHOW_RAM] = showRam
             preferences[PreferencesKeys.OVERLAY_SHOW_FPS] = showFps
+        }
+    }
+
+    suspend fun setApplyOnBoot(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.APPLY_ON_BOOT] = enabled
+        }
+    }
+
+    suspend fun setBootApplyDelaySeconds(delaySeconds: Int) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.BOOT_APPLY_DELAY_SECONDS] = delaySeconds
+        }
+    }
+
+    suspend fun setBootApplyNotificationEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.BOOT_APPLY_NOTIFICATION_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setLastBootApplyStatus(status: String?) {
+        dataStore.edit { preferences ->
+            if (status == null) {
+                preferences.remove(PreferencesKeys.LAST_BOOT_APPLY_STATUS)
+            } else {
+                preferences[PreferencesKeys.LAST_BOOT_APPLY_STATUS] = status
+            }
         }
     }
 }

@@ -40,6 +40,7 @@ fun MoreScreen(
     automationViewModel: com.mahin.hytune.ui.automation.AutomationViewModel = hiltViewModel(),
     scriptViewModel: com.mahin.hytune.ui.tools.ScriptViewModel = hiltViewModel(),
     sysfsViewModel: com.mahin.hytune.ui.tools.SysfsViewModel = hiltViewModel(),
+    bootViewModel: com.mahin.hytune.ui.boot.BootViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -53,6 +54,7 @@ fun MoreScreen(
     val automationState by automationViewModel.uiState.collectAsState()
     val scriptState by scriptViewModel.uiState.collectAsState()
     val sysfsState by sysfsViewModel.uiState.collectAsState()
+    val bootState by bootViewModel.uiState.collectAsState()
 
     var showPanicConfirmDialog by remember { mutableStateOf(false) }
 
@@ -299,6 +301,17 @@ fun MoreScreen(
                 }
             }
         }
+
+        // Boot Apply System Card
+        com.mahin.hytune.ui.boot.BootSettingsCard(
+            uiState = bootState,
+            onToggleApplyOnBoot = { bootViewModel.setApplyOnBoot(it) },
+            onSetDelaySeconds = { bootViewModel.setBootApplyDelaySeconds(it) },
+            onToggleNotification = { bootViewModel.setBootApplyNotificationEnabled(it) },
+            onResetCrashCounter = { bootViewModel.resetCrashCounter() },
+            onTestBootApply = { bootViewModel.testBootApplyNow() },
+            onDismissTestMessage = { bootViewModel.dismissTestMessage() }
+        )
 
         // Tools & Automation Card
         Card(
