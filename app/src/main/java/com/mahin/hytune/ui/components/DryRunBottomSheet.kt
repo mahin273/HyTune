@@ -28,9 +28,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.mahin.hytune.domain.safety.model.ProposedChange
 import com.mahin.hytune.domain.safety.model.RiskLevel
+import com.mahin.hytune.ui.common.accessibleTouchTarget
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -122,13 +125,17 @@ fun DryRunBottomSheet(
             ) {
                 OutlinedButton(
                     onClick = onDismiss,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .accessibleTouchTarget()
                 ) {
                     Text("Cancel")
                 }
                 Button(
                     onClick = onConfirmApply,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .accessibleTouchTarget(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (hasHighRisk) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                     )
@@ -146,7 +153,11 @@ private fun ProposedChangeCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "${change.subsystem} change: ${change.parameter} from ${change.currentValue} to ${change.targetValue}, risk level ${change.riskLevel.name}"
+            },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         )

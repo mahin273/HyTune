@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mahin.hytune.data.local.db.entity.ProfileEntity
+import com.mahin.hytune.ui.common.profileSemantics
 
 @Composable
 fun ProfileModeSelector(
@@ -35,6 +36,7 @@ fun ProfileModeSelector(
                 selected = isSelected,
                 onClick = { onProfileSelected(profile.id) },
                 label = { Text(text = profile.name) },
+                modifier = Modifier.profileSemantics(profile.name, isSelected),
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
