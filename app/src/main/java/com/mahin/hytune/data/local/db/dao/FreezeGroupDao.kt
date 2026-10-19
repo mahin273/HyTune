@@ -61,8 +61,13 @@ interface FreezeGroupDao {
         val groupId = if (group.id == 0L) {
             insertGroup(group)
         } else {
-            updateGroup(group)
-            group.id
+            val existing = getGroupWithPackagesByIdSync(group.id)
+            if (existing != null) {
+                updateGroup(group)
+                group.id
+            } else {
+                insertGroup(group)
+            }
         }
         setGroupPackages(groupId, packageNames)
         return groupId

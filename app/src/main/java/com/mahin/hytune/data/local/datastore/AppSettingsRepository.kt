@@ -293,4 +293,36 @@ class AppSettingsRepository @Inject constructor(
             }
         }
     }
+
+    suspend fun restoreFromBackup(backup: com.mahin.hytune.domain.backup.model.SettingsBackupDto) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.ACTIVE_PROFILE_ID] = backup.activeProfileId
+            preferences[PreferencesKeys.TEMP_UNIT_CELSIUS] = backup.temperatureUnitCelsius
+            preferences[PreferencesKeys.FLOATING_MONITOR_ENABLED] = backup.floatingMonitorEnabled
+            preferences[PreferencesKeys.SAMPLING_INTERVAL_MS] = backup.samplingIntervalMs
+            preferences[PreferencesKeys.SAFETY_ROLLBACK_TIMEOUT_SEC] = backup.safetyRollbackTimeoutSec
+            preferences[PreferencesKeys.PER_APP_PROFILES_ENABLED] = backup.perAppProfilesEnabled
+            preferences[PreferencesKeys.DYNAMIC_THEME_ENABLED] = backup.dynamicThemeEnabled
+            preferences[PreferencesKeys.DRY_RUN_PREVIEW_ENABLED] = backup.dryRunPreviewEnabled
+            preferences[PreferencesKeys.DAEMON_SERVICE_ENABLED] = backup.daemonServiceEnabled
+            preferences[PreferencesKeys.DAEMON_NOTIFICATION_DETAILS_ENABLED] = backup.daemonNotificationDetailsEnabled
+            preferences[PreferencesKeys.CHARGE_LIMIT_ENABLED] = backup.chargeLimitEnabled
+            preferences[PreferencesKeys.CHARGE_LIMIT_PERCENT] = backup.chargeLimitPercent
+            preferences[PreferencesKeys.CHARGE_CURRENT_LIMIT_MA] = backup.chargeCurrentLimitMa
+            preferences[PreferencesKeys.BYPASS_CHARGING_ENABLED] = backup.bypassChargingEnabled
+            preferences[PreferencesKeys.OVERLAY_COMPACT_MODE] = backup.overlayCompactMode
+            preferences[PreferencesKeys.OVERLAY_OPACITY] = backup.overlayOpacity
+            preferences[PreferencesKeys.OVERLAY_SHOW_CPU] = backup.overlayShowCpu
+            preferences[PreferencesKeys.OVERLAY_SHOW_GPU] = backup.overlayShowGpu
+            preferences[PreferencesKeys.OVERLAY_SHOW_BATTERY] = backup.overlayShowBattery
+            preferences[PreferencesKeys.OVERLAY_SHOW_TEMP] = backup.overlayShowTemp
+            preferences[PreferencesKeys.OVERLAY_SHOW_RAM] = backup.overlayShowRam
+            preferences[PreferencesKeys.OVERLAY_SHOW_FPS] = backup.overlayShowFps
+            preferences[PreferencesKeys.OVERLAY_POS_X] = backup.overlayPositionX
+            preferences[PreferencesKeys.OVERLAY_POS_Y] = backup.overlayPositionY
+            preferences[PreferencesKeys.APPLY_ON_BOOT] = backup.applyOnBoot
+            preferences[PreferencesKeys.BOOT_APPLY_DELAY_SECONDS] = backup.bootApplyDelaySeconds
+            preferences[PreferencesKeys.BOOT_APPLY_NOTIFICATION_ENABLED] = backup.bootApplyNotificationEnabled
+        }
+    }
 }
