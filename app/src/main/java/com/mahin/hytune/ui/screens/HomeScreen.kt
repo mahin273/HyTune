@@ -12,25 +12,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mahin.hytune.ui.common.loadingSemantics
-import com.mahin.hytune.ui.components.MetricCard
-import com.mahin.hytune.ui.components.PrivilegeStatusBanner
 import com.mahin.hytune.ui.components.ProfileModeSelector
 import com.mahin.hytune.ui.components.SocInfoCard
+import com.mahin.hytune.ui.components.home.DeviceInfoCard
+import com.mahin.hytune.ui.components.home.HardwareStatsStrip
+import com.mahin.hytune.ui.components.home.PerformanceMonitorCard
+import com.mahin.hytune.ui.components.home.QuickActionsGrid
+import com.mahin.hytune.ui.components.home.RootAccessCard
 import com.mahin.hytune.ui.dashboard.DashboardViewModel
-import com.mahin.hytune.ui.theme.AmberTertiaryDark
-import com.mahin.hytune.ui.theme.CyanPrimaryDark
-import com.mahin.hytune.ui.theme.MintSecondaryDark
-import kotlin.math.abs
+import com.mahin.hytune.ui.navigation.HyTuneDestination
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    viewModel: DashboardViewModel = hiltViewModel()
+    viewModel: DashboardViewModel = hiltViewModel(),
+    onNavigateToTab: (HyTuneDestination) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -42,20 +42,38 @@ fun HomeScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        PrivilegeStatusBanner(
+        // 1. Root Access Card (Screen 1 in mockup)
+        RootAccessCard(
             tier = uiState.privilegeTier,
             onRequestRoot = { viewModel.requestRoot() }
         )
 
-        if (uiState.hardwareSummary != null) {
-            val snapshot = uiState.latestSnapshot
-            SocInfoCard(
-                summary = uiState.hardwareSummary!!,
-                coreFrequencies = snapshot?.cpu?.coreFrequenciesKHz ?: emptyMap(),
-                thermals = snapshot?.thermals
-            )
-        }
+        // 2. Device Info Card (Screen 1 in mockup)
+        DeviceInfoCard(
+            socName = uiState.hardwareSummary?.socName
+        )
 
+        // 3. 3-Column Hardware Stats Strip (CPU | RAM | Battery)
+        HardwareStatsStrip(
+            summary = uiState.hardwareSummary,
+            snapshot = uiState.latestSnapshot
+        )
+
+        // 4. Quick Actions 2x2 Grid (System Tweaks, App Manager, Performance, ADB Shell)
+        QuickActionsGrid(
+            onNavigate = onNavigateToTab
+        )
+
+        // 5. Performance Monitor Card (Donut Gauge + Multi-line Chart + Quick Cards)
+        val snapshot = uiState.latestSnapshot
+        PerformanceMonitorCard(
+            snapshot = snapshot,
+            cpuHistory = uiState.cpuLoadHistory,
+            ramHistory = uiState.ramUsageHistory,
+            tempHistory = uiState.tempHistory
+        )
+
+        // 6. Profiles Selector
         if (uiState.profiles.isNotEmpty()) {
             ProfileModeSelector(
                 profiles = uiState.profiles,
@@ -64,70 +82,13 @@ fun HomeScreen(
             )
         }
 
-        val snapshot = uiState.latestSnapshot
-        if (snapshot != null) {
-            // CPU Metric Card
-            MetricCard(
-                title = "CPU Total Load",
-                primaryValue = "%.1f %%".format(snapshot.cpu.overallUsagePercent),
-                secondaryValue = "${snapshot.cpu.coreFrequenciesKHz.size} active cores monitored",
-                dataPoints = uiState.cpuLoadHistory,
-                lineColor = CyanPrimaryDark,
-                baselineMin = 0f,
-                baselineMax = 100f
+        // 7. Real-time CPU Cluster Frequency Visualizer
+        if (uiState.hardwareSummary != null) {
+            SocInfoCard(
+                summary = uiState.hardwareSummary!!,
+                coreFrequencies = snapshot?.cpu?.coreFrequenciesKHz ?: emptyMap(),
+                thermals = snapshot?.thermals
             )
-
-            // RAM Metric Card
-            val totalGb = snapshot.memory.totalBytes / (1024f * 1024f * 1024f)
-            val availableGb = snapshot.memory.availableBytes / (1024f * 1024f * 1024f)
-            val usedGb = totalGb - availableGb
-            MetricCard(
-                title = "RAM & Memory Pressure",
-                primaryValue = "%.1f %%".format(snapshot.memory.usagePercent),
-                secondaryValue = "Used: %.1f GB / %.1f GB (ZRAM: %.1f %%)".format(
-                    usedGb,
-                    totalGb,
-                    snapshot.memory.swapUsagePercent
-                ),
-                dataPoints = uiState.ramUsageHistory,
-                lineColor = MintSecondaryDark,
-                baselineMin = 0f,
-                baselineMax = 100f
-            )
-
-            // Thermal Metric Card
-            val maxTempC = snapshot.thermals.maxTempC
-            val displayTemp = if (uiState.temperatureInCelsius) {
-                "%.1f C".format(maxTempC)
-            } else {
-                "%.1f F".format(maxTempC * 1.8f + 32f)
-            }
-            val thermalColor = if (maxTempC >= 70f) Color(0xFFE57373) else CyanPrimaryDark
-            MetricCard(
-                title = "Thermal Sensors",
-                primaryValue = displayTemp,
-                secondaryValue = "${snapshot.thermals.zones.size} active thermal sensor zones monitored",
-                dataPoints = uiState.tempHistory,
-                lineColor = thermalColor,
-                baselineMin = 25f,
-                baselineMax = 95f
-            )
-
-            // Battery & Power Card
-            if (snapshot.battery != null) {
-                val powerSign = if (snapshot.battery.currentAmperes < 0) "+" else "-"
-                MetricCard(
-                    title = "Battery & Power Flow",
-                    primaryValue = "%s%.2f W".format(powerSign, abs(snapshot.battery.powerWatts)),
-                    secondaryValue = "%d %% | %.2f V | %.1f C".format(
-                        snapshot.battery.percent,
-                        snapshot.battery.voltageV,
-                        snapshot.battery.temperatureC
-                    ),
-                    dataPoints = uiState.batteryWattageHistory,
-                    lineColor = AmberTertiaryDark
-                )
-            }
         } else if (uiState.isLoading) {
             Column(
                 modifier = Modifier
