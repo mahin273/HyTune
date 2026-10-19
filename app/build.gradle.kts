@@ -69,7 +69,9 @@ android {
                     "--add-opens=java.base/java.lang=ALL-UNNAMED",
                     "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
                     "--add-opens=java.base/java.io=ALL-UNNAMED",
-                    "--add-opens=java.base/sun.misc=ALL-UNNAMED"
+                    "--add-opens=java.base/java.util=ALL-UNNAMED",
+                    "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
+                    "--add-opens=jdk.unsupported/sun.misc=ALL-UNNAMED"
                 )
             }
         }

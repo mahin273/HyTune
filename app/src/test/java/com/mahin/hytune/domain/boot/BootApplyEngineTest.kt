@@ -20,7 +20,10 @@ import com.mahin.hytune.domain.script.ScriptRepository
 import com.mahin.hytune.domain.script.engine.ScriptExecutionEngine
 import com.mahin.hytune.domain.storage.StorageControlEngine
 import com.mahin.hytune.service.notification.DaemonNotificationManager
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -47,6 +50,7 @@ class BootApplyEngineTest {
     val tempFolder = TemporaryFolder()
 
     private val testDispatcher = StandardTestDispatcher()
+    private lateinit var dataStoreScope: CoroutineScope
     private lateinit var context: Context
     private lateinit var db: HyTuneDatabase
     private lateinit var fakeBackend: FakePrivilegeBackend
@@ -101,7 +105,9 @@ class BootApplyEngineTest {
         fakeBackend.setFile("$blockDev/queue/rotational", "0\n")
         fakeBackend.setFile("$blockDev/size", "250069680\n")
 
+        dataStoreScope = CoroutineScope(testDispatcher + SupervisorJob())
         val testDataStore = PreferenceDataStoreFactory.create(
+            scope = dataStoreScope,
             produceFile = { tempFolder.newFile("test_boot_settings.preferences_pb") }
         )
         appSettingsRepository = AppSettingsRepository(testDataStore)
@@ -141,6 +147,7 @@ class BootApplyEngineTest {
     @After
     @Throws(IOException::class)
     fun tearDown() {
+        dataStoreScope.cancel()
         db.close()
     }
 
