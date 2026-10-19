@@ -31,6 +31,7 @@ class DaemonNotificationManager @Inject constructor(
         const val BOOT_NOTIFICATION_ID = 1002
         const val REQUEST_CODE_CONTENT = 101
         const val REQUEST_CODE_STOP = 102
+        const val REQUEST_CODE_CYCLE = 103
     }
 
     init {
@@ -82,6 +83,15 @@ class DaemonNotificationManager @Inject constructor(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+        val cycleIntent = PendingIntent.getBroadcast(
+            context,
+            REQUEST_CODE_CYCLE,
+            Intent(context, com.mahin.hytune.integration.widget.HyTuneWidgetProvider::class.java).apply {
+                action = com.mahin.hytune.integration.widget.HyTuneWidgetProvider.ACTION_WIDGET_CYCLE_PROFILE
+            },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         val detailText = if (!statusSummary.isNullOrBlank()) {
             "Profile: $activeProfileName | $statusSummary"
         } else {
@@ -100,6 +110,11 @@ class DaemonNotificationManager @Inject constructor(
                 android.R.drawable.ic_menu_close_clear_cancel,
                 "Stop",
                 stopIntent
+            )
+            .addAction(
+                android.R.drawable.ic_popup_sync,
+                "Next Profile",
+                cycleIntent
             )
             .build()
     }

@@ -21,11 +21,14 @@ import com.mahin.hytune.domain.script.ScriptRepository
 import com.mahin.hytune.domain.script.engine.ScriptExecutionEngine
 import com.mahin.hytune.domain.storage.StorageControlEngine
 import com.mahin.hytune.service.notification.DaemonNotificationManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -55,6 +58,7 @@ class BootCompletedReceiverTest {
 
     @Before
     fun setUp() {
+        Dispatchers.setMain(testDispatcher)
         context = ApplicationProvider.getApplicationContext()
         db = Room.inMemoryDatabaseBuilder(context, HyTuneDatabase::class.java)
             .allowMainThreadQueries()
@@ -142,6 +146,7 @@ class BootCompletedReceiverTest {
     @Throws(IOException::class)
     fun tearDown() {
         db.close()
+        Dispatchers.resetMain()
     }
 
     @Test
@@ -163,6 +168,7 @@ class BootCompletedReceiverTest {
 
         val job = receiver.handleBootIntent(intent)
         job?.join()
+        advanceUntilIdle()
 
         assertNotNull(appSettingsRepository.settings.first().lastBootApplyStatus)
     }
@@ -175,6 +181,7 @@ class BootCompletedReceiverTest {
 
         val job = receiver.handleBootIntent(intent)
         job?.join()
+        advanceUntilIdle()
 
         assertNotNull(appSettingsRepository.settings.first().lastBootApplyStatus)
     }

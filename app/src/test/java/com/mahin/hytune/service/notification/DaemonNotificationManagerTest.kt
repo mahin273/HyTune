@@ -55,6 +55,7 @@ class DaemonNotificationManagerTest {
         assertNotNull(notification.actions)
         assertTrue(notification.actions.isNotEmpty())
         assertEquals("Stop", notification.actions[0].title.toString())
+        assertEquals("Next Profile", notification.actions[1].title.toString())
     }
 
     @Test
