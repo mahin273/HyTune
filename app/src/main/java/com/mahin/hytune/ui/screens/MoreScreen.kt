@@ -33,7 +33,6 @@ import com.mahin.hytune.service.model.DaemonState
 import com.mahin.hytune.ui.daemon.DaemonViewModel
 import com.mahin.hytune.ui.safety.SafetyViewModel
 
-import com.mahin.hytune.ui.components.scene.SceneMenuGrid
 import com.mahin.hytune.ui.navigation.HyTuneDestination
 
 @Composable
@@ -69,26 +68,6 @@ fun MoreScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Scene 2-Column Menu Grid (Screen 3 in mockup)
-        SceneMenuGrid(
-            onMenuItemClick = { actionKey ->
-                when (actionKey) {
-                    "tune_cpu" -> onNavigateToTab(HyTuneDestination.Tune)
-                    "tune_memory" -> onNavigateToTab(HyTuneDestination.Tune)
-                    "tune_gpu" -> onNavigateToTab(HyTuneDestination.Tune)
-                    "tune_display" -> onNavigateToTab(HyTuneDestination.Tune)
-                    "battery_stats" -> onNavigateToTab(HyTuneDestination.Monitor)
-                    "charging_stats" -> onNavigateToTab(HyTuneDestination.Monitor)
-                    "fps_stats" -> onNavigateToTab(HyTuneDestination.Monitor)
-                    "processes" -> onNavigateToTab(HyTuneDestination.Apps)
-                    "app_manager" -> onNavigateToTab(HyTuneDestination.Apps)
-                    "app_activities" -> onNavigateToTab(HyTuneDestination.Apps)
-                    "app_freezer" -> onNavigateToTab(HyTuneDestination.Apps)
-                    else -> {}
-                }
-            }
-        )
-
         // Automation Rules Card
         com.mahin.hytune.ui.automation.AutomationRulesCard(
             uiState = automationState,
