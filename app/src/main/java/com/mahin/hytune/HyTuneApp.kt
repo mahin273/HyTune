@@ -2,6 +2,7 @@ package com.mahin.hytune
 
 import android.app.Application
 import com.mahin.hytune.core.privilege.PrivilegeManager
+import com.mahin.hytune.domain.profile.ProfileRepository
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,10 +15,14 @@ class HyTuneApp : Application() {
     @Inject
     lateinit var privilegeManager: PrivilegeManager
 
+    @Inject
+    lateinit var profileRepository: ProfileRepository
+
     override fun onCreate() {
         super.onCreate()
         CoroutineScope(Dispatchers.IO).launch {
             privilegeManager.requestRootAccess()
+            profileRepository.seedBuiltInProfilesIfEmpty()
         }
     }
 }

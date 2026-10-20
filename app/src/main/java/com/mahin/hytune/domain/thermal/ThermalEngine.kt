@@ -52,10 +52,12 @@ class ThermalEngine @Inject constructor(
         val zones = mutableListOf<ThermalZoneInfo>()
         for (id in zoneIds) {
             val zonePath = "$THERMAL_BASE/thermal_zone$id"
-            val typeRaw = privilegeBackend.readFile("$zonePath/type").getOrNull()?.trim()
-            if (typeRaw.isNullOrBlank()) continue
-
+            var typeRaw = privilegeBackend.readFile("$zonePath/type").getOrNull()?.trim()
             val tempRaw = privilegeBackend.readFile("$zonePath/temp").getOrNull()?.trim()?.toFloatOrNull() ?: continue
+            if (typeRaw.isNullOrBlank()) {
+                typeRaw = "thermal_zone$id"
+            }
+
             val tempC = normalizeTemperature(tempRaw)
             val zoneType = classifyZoneType(typeRaw)
             val isZoneThrottling = isZoneThrottling(zoneType, tempC)
@@ -69,6 +71,22 @@ class ThermalEngine @Inject constructor(
                     isThrottling = isZoneThrottling
                 )
             )
+        }
+
+        if (zones.none { it.type == ThermalZoneType.BATTERY }) {
+            val battTempRaw = privilegeBackend.readFile("/sys/class/power_supply/battery/temp").getOrNull()?.trim()?.toFloatOrNull()
+            if (battTempRaw != null) {
+                val bTempC = normalizeTemperature(battTempRaw)
+                zones.add(
+                    ThermalZoneInfo(
+                        id = 999,
+                        name = "battery",
+                        tempC = bTempC,
+                        type = ThermalZoneType.BATTERY,
+                        isThrottling = bTempC >= BATTERY_THROTTLE_TEMP_C
+                    )
+                )
+            }
         }
 
         val coolingDevices = mutableListOf<CoolingDeviceInfo>()
@@ -109,12 +127,18 @@ class ThermalEngine @Inject constructor(
     private fun classifyZoneType(name: String): ThermalZoneType {
         val lower = name.lowercase()
         return when {
-            lower.contains("cpu") -> ThermalZoneType.CPU
-            lower.contains("gpu") -> ThermalZoneType.GPU
-            lower.contains("batt") || lower.contains("bms") -> ThermalZoneType.BATTERY
-            lower.contains("soc") -> ThermalZoneType.SOC
+            lower.contains("cpu") || lower.contains("tsens") || lower.contains("krait") ||
+                lower.contains("kryo") || lower.contains("gold") || lower.contains("silver") ||
+                lower.contains("prime") || lower.contains("little") || lower.contains("big") ||
+                lower.contains("a53") || lower.contains("a55") || lower.contains("a76") ||
+                lower.contains("a77") || lower.contains("a78") || lower.contains("x1") ||
+                lower.contains("x2") || lower.contains("x3") || lower.contains("x4") -> ThermalZoneType.CPU
+            lower.contains("gpu") || lower.contains("gpuss") || lower.contains("adreno") ||
+                lower.contains("mali") || lower.contains("kgsl") -> ThermalZoneType.GPU
+            lower.contains("batt") || lower.contains("bms") || lower.contains("battery") -> ThermalZoneType.BATTERY
+            lower.contains("soc") || lower.contains("system") || lower.contains("pmic") -> ThermalZoneType.SOC
             lower.contains("modem") || lower.contains("wlan") || lower.contains("wifi") -> ThermalZoneType.MODEM
-            lower.contains("skin") || lower.contains("chg") || lower.contains("charger") -> ThermalZoneType.SKIN
+            lower.contains("skin") || lower.contains("chg") || lower.contains("charger") || lower.contains("quiet") -> ThermalZoneType.SKIN
             else -> ThermalZoneType.OTHER
         }
     }

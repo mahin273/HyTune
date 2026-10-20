@@ -115,6 +115,58 @@ fun ThermalZonesCard(
                 )
             }
 
+            // Monitored Sensor Zones List
+            if (snapshot.zones.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Monitored Sensors",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    val displayZones = snapshot.zones.take(8)
+                    val chunked = displayZones.chunked(2)
+                    chunked.forEach { rowZones ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowZones.forEach { zone ->
+                                androidx.compose.material3.Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = zone.name.take(16),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1
+                                        )
+                                        Text(
+                                            text = "${"%.1f".format(zone.tempC)} C",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (zone.tempC >= 60f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                            if (rowZones.size == 1) {
+                                androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+            }
+
             // Active Cooling Devices
             val activeCooling = snapshot.coolingDevices.filter { it.isThrottling }
             if (activeCooling.isNotEmpty()) {

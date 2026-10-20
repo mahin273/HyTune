@@ -8,6 +8,7 @@ data class AppSettings(
     val safetyRollbackTimeoutSec: Int = 15,
     val perAppProfilesEnabled: Boolean = false,
     val dynamicThemeEnabled: Boolean = true,
+    val themeStyle: String = "dark",
     val bootloopCrashCount: Int = 0,
     val lastApplyTimestampEpochMs: Long = 0L,
     val isApplyingSettings: Boolean = false,

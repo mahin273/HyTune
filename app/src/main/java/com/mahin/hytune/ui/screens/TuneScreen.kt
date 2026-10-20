@@ -52,18 +52,17 @@ import com.mahin.hytune.ui.theme.SurfaceVariantDark
 import com.mahin.hytune.ui.components.scene.GameAppItem
 import com.mahin.hytune.ui.components.scene.SceneCustomModeCard
 import com.mahin.hytune.ui.components.scene.SceneGamesBar
-import com.mahin.hytune.ui.components.scene.SceneTunerActionTiles
 import com.mahin.hytune.ui.dashboard.DashboardViewModel
 import com.mahin.hytune.ui.navigation.HyTuneDestination
 import com.mahin.hytune.ui.viewmodel.PerAppRulesViewModel
 
 enum class TuneCategory(val label: String) {
-    ALL("All"),
     CPU("CPU"),
     GPU("GPU"),
     MEMORY("Memory"),
     STORAGE("Storage"),
-    DISPLAY("Display")
+    DISPLAY("Display"),
+    ALL("All")
 }
 
 @Composable
@@ -87,7 +86,7 @@ fun TuneScreen(
     val displayUiState by displayViewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var selectedCategory by rememberSaveable { mutableStateOf(TuneCategory.ALL) }
+    var selectedCategory by rememberSaveable { mutableStateOf(TuneCategory.CPU) }
 
     val gamesList = remember(perAppUiState.apps) {
         val detected = perAppUiState.apps.filter { it.isGame }.map {
@@ -193,14 +192,7 @@ fun TuneScreen(
                     onProfileSelected = { dashboardViewModel.onProfileSelected(it) }
                 )
 
-                // 3. Scene Tuner Action Cards (App Profile, Auto Boost, Look for other?)
-                SceneTunerActionTiles(
-                    onNavigateToAppProfiles = { onNavigateToTab(HyTuneDestination.Apps) },
-                    onNavigateToAutoClick = { selectedCategory = TuneCategory.CPU },
-                    onNavigateToAppFreezer = { onNavigateToTab(HyTuneDestination.Apps) }
-                )
-
-                // 4. Category Filter Pills (Screen 2 in mockup)
+                // 3. Category Filter Pills (Screen 2 in mockup)
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
