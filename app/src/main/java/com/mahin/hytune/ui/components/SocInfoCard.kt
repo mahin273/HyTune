@@ -115,7 +115,7 @@ fun SocInfoCard(
                 if (summary.gpu != null) {
                     val gpuMaxMhz = summary.gpu.maxFreqKHz / 1_000f
                     Text(
-                        text = "GPU: ${summary.gpu.vendor.name} @ %.0f MHz".format(gpuMaxMhz),
+                        text = "GPU: ${summary.gpu.vendor.name} @ ${"%.0f".format(gpuMaxMhz)} MHz",
                         style = MonospaceCodeStyle.copy(fontSize = 11.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
