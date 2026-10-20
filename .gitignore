@@ -15,3 +15,6 @@ Captures
 **/*.md
 !README.md
 !**/README.md
+
+.agents/
+.kotlin/

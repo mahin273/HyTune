@@ -44,6 +44,25 @@ import com.mahin.hytune.ui.theme.SurfaceDark
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
+internal fun formatBatteryStats(batteryPercent: Int, voltageV: Float): String {
+    return "$batteryPercent%  ${"%.1f".format(voltageV)}v"
+}
+
+internal fun formatPowerStats(powerWatts: Float, isCharging: Boolean): String {
+    return if (isCharging) "+%.2fW".format(abs(powerWatts)) else "-%.2fW".format(abs(powerWatts))
+}
+
+internal fun formatThermalStats(batteryTempC: Float): String {
+    return "%.1f°C".format(batteryTempC)
+}
+
+internal fun formatUptime(uptimeMillis: Long): String {
+    val hours = TimeUnit.MILLISECONDS.toHours(uptimeMillis)
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(uptimeMillis) % 60
+    val seconds = TimeUnit.MILLISECONDS.toSeconds(uptimeMillis) % 60
+    return "%02d:%02d:%02d".format(hours, minutes, seconds)
+}
+
 @Composable
 fun SceneBottomStatsCards(
     batterySample: BatterySample?,
@@ -53,10 +72,7 @@ fun SceneBottomStatsCards(
     modifier: Modifier = Modifier
 ) {
     val uptimeMillis = remember { SystemClock.elapsedRealtime() }
-    val hours = TimeUnit.MILLISECONDS.toHours(uptimeMillis)
-    val minutes = TimeUnit.MILLISECONDS.toMinutes(uptimeMillis) % 60
-    val seconds = TimeUnit.MILLISECONDS.toSeconds(uptimeMillis) % 60
-    val formattedUptime = "%02d:%02d:%02d".format(hours, minutes, seconds)
+    val formattedUptime = formatUptime(uptimeMillis)
 
     val batteryPercent = batterySample?.percent ?: 80
     val voltageV = batterySample?.voltageV ?: 4.0f
@@ -87,7 +103,7 @@ fun SceneBottomStatsCards(
                 StatRow(
                     icon = Icons.Default.ElectricBolt,
                     iconTint = if (isCharging) LimePrimaryDark else Color(0xFFFFB74D),
-                    label = if (isCharging) "+%.2fW".format(abs(powerWatts)) else "-%.2fW".format(abs(powerWatts)),
+                    label = formatPowerStats(powerWatts, isCharging),
                     valueColor = if (isCharging) LimePrimaryDark else OnSurfaceDark
                 )
 
@@ -95,14 +111,14 @@ fun SceneBottomStatsCards(
                 StatRow(
                     icon = Icons.Default.BatteryChargingFull,
                     iconTint = LimePrimaryDark,
-                    label = "$batteryPercent%  %.1fv".format(voltageV)
+                    label = formatBatteryStats(batteryPercent, voltageV)
                 )
 
                 // Thermal Temp
                 StatRow(
                     icon = Icons.Default.LocalFireDepartment,
                     iconTint = Color(0xFFEF5350),
-                    label = "%.1f°C".format(batteryTempC)
+                    label = formatThermalStats(batteryTempC)
                 )
             }
         }
