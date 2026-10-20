@@ -93,78 +93,78 @@ class ProfileRepository @Inject constructor(
             appSettingsRepository.setActiveProfileId(profileId)
         }
     }
+}
 
-    private fun TuningProfile.toEntity(): ProfileEntity {
-        val firstCpu = cpuClusters.values.firstOrNull()
-        val minFreq = (firstCpu?.minFreqTarget as? FrequencyTarget.AbsoluteKHz)?.freqKHz
-        val maxFreq = (firstCpu?.maxFreqTarget as? FrequencyTarget.AbsoluteKHz)?.freqKHz
+fun TuningProfile.toEntity(): ProfileEntity {
+    val firstCpu = cpuClusters.values.firstOrNull()
+    val minFreq = (firstCpu?.minFreqTarget as? FrequencyTarget.AbsoluteKHz)?.freqKHz
+    val maxFreq = (firstCpu?.maxFreqTarget as? FrequencyTarget.AbsoluteKHz)?.freqKHz
 
-        val gpuMin = (gpu?.minFreqTarget as? FrequencyTarget.AbsoluteKHz)?.freqKHz
-        val gpuMax = (gpu?.maxFreqTarget as? FrequencyTarget.AbsoluteKHz)?.freqKHz
+    val gpuMin = (gpu?.minFreqTarget as? FrequencyTarget.AbsoluteKHz)?.freqKHz
+    val gpuMax = (gpu?.maxFreqTarget as? FrequencyTarget.AbsoluteKHz)?.freqKHz
 
-        return ProfileEntity(
-            id = id,
-            name = name,
-            isBuiltIn = isBuiltIn,
-            cpuGovernor = firstCpu?.governor,
-            cpuMinFreqKHz = minFreq,
-            cpuMaxFreqKHz = maxFreq,
-            gpuGovernor = gpu?.governor,
-            gpuMinFreqKHz = gpuMin,
-            gpuMaxFreqKHz = gpuMax,
-            zramEnabled = memory?.zramSizeBytes?.let { it > 0 },
-            ioScheduler = storage?.scheduler,
-            createdAtEpochMs = createdAtEpochMs,
-            updatedAtEpochMs = updatedAtEpochMs
+    return ProfileEntity(
+        id = id,
+        name = name,
+        isBuiltIn = isBuiltIn,
+        cpuGovernor = firstCpu?.governor,
+        cpuMinFreqKHz = minFreq,
+        cpuMaxFreqKHz = maxFreq,
+        gpuGovernor = gpu?.governor,
+        gpuMinFreqKHz = gpuMin,
+        gpuMaxFreqKHz = gpuMax,
+        zramEnabled = memory?.zramSizeBytes?.let { it > 0 },
+        ioScheduler = storage?.scheduler,
+        createdAtEpochMs = createdAtEpochMs,
+        updatedAtEpochMs = updatedAtEpochMs
+    )
+}
+
+fun ProfileEntity.toDomain(): TuningProfile {
+    val builtIn = BuiltInProfiles.findById(id)
+    if (builtIn != null) {
+        return builtIn
+    }
+
+    val cpuMap = mutableMapOf<Int, CpuClusterProfileConfig>()
+    cpuGovernor?.let { gov ->
+        cpuMap[0] = CpuClusterProfileConfig(
+            clusterId = 0,
+            governor = gov,
+            minFreqTarget = cpuMinFreqKHz?.let { FrequencyTarget.AbsoluteKHz(it) },
+            maxFreqTarget = cpuMaxFreqKHz?.let { FrequencyTarget.AbsoluteKHz(it) }
         )
     }
 
-    private fun ProfileEntity.toDomain(): TuningProfile {
-        val builtIn = BuiltInProfiles.findById(id)
-        if (builtIn != null) {
-            return builtIn
-        }
-
-        val cpuMap = mutableMapOf<Int, CpuClusterProfileConfig>()
-        cpuGovernor?.let { gov ->
-            cpuMap[0] = CpuClusterProfileConfig(
-                clusterId = 0,
-                governor = gov,
-                minFreqTarget = cpuMinFreqKHz?.let { FrequencyTarget.AbsoluteKHz(it) },
-                maxFreqTarget = cpuMaxFreqKHz?.let { FrequencyTarget.AbsoluteKHz(it) }
-            )
-        }
-
-        val gpuConfig = if (gpuGovernor != null || gpuMinFreqKHz != null || gpuMaxFreqKHz != null) {
-            GpuProfileConfig(
-                governor = gpuGovernor,
-                minFreqTarget = gpuMinFreqKHz?.let { FrequencyTarget.AbsoluteKHz(it) },
-                maxFreqTarget = gpuMaxFreqKHz?.let { FrequencyTarget.AbsoluteKHz(it) }
-            )
-        } else null
-
-        val memConfig = if (zramEnabled != null) {
-            MemoryProfileConfig(
-                zramSizeBytes = if (zramEnabled == true) 2L * 1024 * 1024 * 1024 else 0L
-            )
-        } else null
-
-        val storageConfig = if (ioScheduler != null) {
-            StorageProfileConfig(scheduler = ioScheduler)
-        } else null
-
-        return TuningProfile(
-            id = id,
-            name = name,
-            description = "Custom profile: $name",
-            mode = ProfileMode.CUSTOM,
-            isBuiltIn = false,
-            cpuClusters = cpuMap,
-            gpu = gpuConfig,
-            memory = memConfig,
-            storage = storageConfig,
-            createdAtEpochMs = createdAtEpochMs,
-            updatedAtEpochMs = updatedAtEpochMs
+    val gpuConfig = if (gpuGovernor != null || gpuMinFreqKHz != null || gpuMaxFreqKHz != null) {
+        GpuProfileConfig(
+            governor = gpuGovernor,
+            minFreqTarget = gpuMinFreqKHz?.let { FrequencyTarget.AbsoluteKHz(it) },
+            maxFreqTarget = gpuMaxFreqKHz?.let { FrequencyTarget.AbsoluteKHz(it) }
         )
-    }
+    } else null
+
+    val memConfig = if (zramEnabled != null) {
+        MemoryProfileConfig(
+            zramSizeBytes = if (zramEnabled == true) 2L * 1024 * 1024 * 1024 else 0L
+        )
+    } else null
+
+    val storageConfig = if (ioScheduler != null) {
+        StorageProfileConfig(scheduler = ioScheduler)
+    } else null
+
+    return TuningProfile(
+        id = id,
+        name = name,
+        description = "Custom profile: $name",
+        mode = ProfileMode.CUSTOM,
+        isBuiltIn = false,
+        cpuClusters = cpuMap,
+        gpu = gpuConfig,
+        memory = memConfig,
+        storage = storageConfig,
+        createdAtEpochMs = createdAtEpochMs,
+        updatedAtEpochMs = updatedAtEpochMs
+    )
 }

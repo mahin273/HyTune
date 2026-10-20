@@ -46,6 +46,7 @@ import com.mahin.hytune.domain.appmanager.model.AppOperation
 import com.mahin.hytune.domain.appmanager.model.AppSortOrder
 import com.mahin.hytune.domain.appmanager.model.AppSummary
 import com.mahin.hytune.domain.appmanager.model.AppTypeFilter
+import com.mahin.hytune.ui.components.AppIconImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -336,9 +337,13 @@ fun AppInspectionItemCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            AppIconImage(
+                packageName = app.packageName,
+                modifier = Modifier.size(42.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(

@@ -68,6 +68,8 @@ fun SettingsBottomSheet(
     onDismissRequest: () -> Unit,
     privilegeTier: PrivilegeTier = PrivilegeTier.ROOT,
     floatingOverlayEnabled: Boolean = false,
+    themeStyle: String = "dark",
+    onThemeStyleChanged: (String) -> Unit = {},
     onToggleFloatingOverlay: (Boolean) -> Unit = {},
     onRequestRoot: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -145,26 +147,75 @@ fun SettingsBottomSheet(
                             fontWeight = FontWeight.Bold,
                             color = OnSurfaceDark
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            // AMOLED Black swatch
                             Box(
                                 modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFF0B0B0C))
-                                    .border(1.5.dp, LimePrimaryDark, RoundedCornerShape(6.dp))
-                            )
+                                    .size(28.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF000000))
+                                    .border(
+                                        width = if (themeStyle == "amoled") 2.dp else 1.dp,
+                                        color = if (themeStyle == "amoled") LimePrimaryDark else OutlineDark,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { onThemeStyleChanged("amoled") },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (themeStyle == "amoled") {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(LimePrimaryDark, CircleShape)
+                                    )
+                                }
+                            }
+
+                            // Cyberpunk Dark swatch
                             Box(
                                 modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFF616161))
-                            )
+                                    .size(28.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF1E1E1E))
+                                    .border(
+                                        width = if (themeStyle == "dark") 2.dp else 1.dp,
+                                        color = if (themeStyle == "dark") LimePrimaryDark else OutlineDark,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { onThemeStyleChanged("dark") },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (themeStyle == "dark") {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(LimePrimaryDark, CircleShape)
+                                    )
+                                }
+                            }
+
+                            // Light / Material You swatch
                             Box(
                                 modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFFEDEDED))
-                            )
+                                    .size(28.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFE8E8E8))
+                                    .border(
+                                        width = if (themeStyle == "light") 2.dp else 1.dp,
+                                        color = if (themeStyle == "light") LimePrimaryDark else OutlineDark,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { onThemeStyleChanged("light") },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (themeStyle == "light") {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(Color.Black, CircleShape)
+                                    )
+                                }
+                            }
                         }
                     }
 

@@ -29,6 +29,7 @@ class AppSettingsRepository @Inject constructor(
         val SAFETY_ROLLBACK_TIMEOUT_SEC = intPreferencesKey("safety_rollback_timeout_sec")
         val PER_APP_PROFILES_ENABLED = booleanPreferencesKey("per_app_profiles_enabled")
         val DYNAMIC_THEME_ENABLED = booleanPreferencesKey("dynamic_theme_enabled")
+        val THEME_STYLE = stringPreferencesKey("theme_style")
         val BOOTLOOP_CRASH_COUNT = intPreferencesKey("bootloop_crash_count")
         val LAST_APPLY_TIMESTAMP_EPOCH_MS = longPreferencesKey("last_apply_timestamp_epoch_ms")
         val IS_APPLYING_SETTINGS = booleanPreferencesKey("is_applying_settings")
@@ -75,6 +76,7 @@ class AppSettingsRepository @Inject constructor(
                 safetyRollbackTimeoutSec = preferences[PreferencesKeys.SAFETY_ROLLBACK_TIMEOUT_SEC] ?: 15,
                 perAppProfilesEnabled = preferences[PreferencesKeys.PER_APP_PROFILES_ENABLED] ?: false,
                 dynamicThemeEnabled = preferences[PreferencesKeys.DYNAMIC_THEME_ENABLED] ?: true,
+                themeStyle = preferences[PreferencesKeys.THEME_STYLE] ?: "dark",
                 bootloopCrashCount = preferences[PreferencesKeys.BOOTLOOP_CRASH_COUNT] ?: 0,
                 lastApplyTimestampEpochMs = preferences[PreferencesKeys.LAST_APPLY_TIMESTAMP_EPOCH_MS] ?: 0L,
                 isApplyingSettings = preferences[PreferencesKeys.IS_APPLYING_SETTINGS] ?: false,
@@ -144,6 +146,12 @@ class AppSettingsRepository @Inject constructor(
     suspend fun setDynamicThemeEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.DYNAMIC_THEME_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setThemeStyle(style: String) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.THEME_STYLE] = style
         }
     }
 

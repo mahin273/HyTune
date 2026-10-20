@@ -4,15 +4,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mahin.hytune.data.local.datastore.AppSettingsRepository
 import com.mahin.hytune.data.local.db.dao.ProfileDao
+import com.mahin.hytune.domain.engine.ProfileEngine
 import com.mahin.hytune.domain.probe.HardwareProbe
+import com.mahin.hytune.domain.profile.BuiltInProfiles
+import com.mahin.hytune.domain.profile.ProfileRepository
+import com.mahin.hytune.domain.profile.toEntity
 import com.mahin.hytune.domain.sampler.SystemSamplerEngine
 import com.mahin.hytune.domain.sampler.model.SystemSnapshot
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,13 +29,21 @@ class DashboardViewModel @Inject constructor(
     private val hardwareProbe: HardwareProbe,
     private val samplerEngine: SystemSamplerEngine,
     private val settingsRepository: AppSettingsRepository,
-    private val profileDao: ProfileDao,
+    private val profileDao: ProfileDao? = null,
+    private val profileRepository: ProfileRepository? = null,
+    private val profileEngine: ProfileEngine? = null,
     private val privilegeManager: com.mahin.hytune.core.privilege.PrivilegeManager? = null,
     private val floatingOverlayManager: com.mahin.hytune.domain.overlay.FloatingOverlayManager? = null
 ) : ViewModel() {
 
     val isOverlayShowing: StateFlow<Boolean> = floatingOverlayManager?.isShowing
         ?: MutableStateFlow(false).asStateFlow()
+
+    val settingsFlow: Flow<com.mahin.hytune.data.local.datastore.AppSettings> = settingsRepository.settings
+
+    fun setThemeStyle(style: String): Job = viewModelScope.launch {
+        settingsRepository.setThemeStyle(style)
+    }
 
     fun toggleOverlay(): Job = viewModelScope.launch {
         floatingOverlayManager?.toggleOverlay()
@@ -50,6 +65,9 @@ class DashboardViewModel @Inject constructor(
 
     init {
         loadHardwareInfo()
+        viewModelScope.launch {
+            profileRepository?.seedBuiltInProfilesIfEmpty()
+        }
         observeSettingsAndProfiles()
         observePrivilegeState()
         startSampling()
@@ -83,14 +101,23 @@ class DashboardViewModel @Inject constructor(
 
     private fun observeSettingsAndProfiles() {
         viewModelScope.launch {
+            val profilesFlow = profileRepository?.getAllProfiles()?.map { list ->
+                list.map { it.toEntity() }
+            } ?: profileDao?.getAllProfiles() ?: flowOf(emptyList())
+
             combine(
                 settingsRepository.settings,
-                profileDao.getAllProfiles()
+                profilesFlow
             ) { settings, profiles ->
+                val resolvedProfiles = if (profiles.isEmpty()) {
+                    BuiltInProfiles.ALL_BUILT_IN.map { it.toEntity() }
+                } else {
+                    profiles
+                }
                 _uiState.update { state ->
                     state.copy(
                         activeProfileId = settings.activeProfileId,
-                        profiles = profiles,
+                        profiles = resolvedProfiles,
                         temperatureInCelsius = settings.temperatureUnitCelsius
                     )
                 }
@@ -142,6 +169,11 @@ class DashboardViewModel @Inject constructor(
     fun onProfileSelected(profileId: String): Job {
         return viewModelScope.launch {
             settingsRepository.setActiveProfileId(profileId)
+            try {
+                profileEngine?.applyProfileById(profileId)
+            } catch (_: Exception) {
+                // Handled safely by profile engine
+            }
         }
     }
 }

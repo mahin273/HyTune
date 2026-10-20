@@ -1,5 +1,9 @@
 package com.mahin.hytune.ui.navigation
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,11 +72,13 @@ fun HyTuneAppShell(
     dashboardViewModel: DashboardViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val currentDestination = HyTuneDestination.fromRoute(currentRoute)
     val uiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
     val isOverlayActive by dashboardViewModel.isOverlayShowing.collectAsStateWithLifecycle()
+    val appSettings by dashboardViewModel.settingsFlow.collectAsStateWithLifecycle(initialValue = com.mahin.hytune.data.local.datastore.AppSettings())
 
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
     var showPowerDialog by rememberSaveable { mutableStateOf(false) }
@@ -128,7 +135,28 @@ fun HyTuneAppShell(
                 ) {
                     // Floating HUD Overlay Toggle
                     IconButton(
-                        onClick = { dashboardViewModel.toggleOverlay() },
+                        onClick = {
+                            if (!Settings.canDrawOverlays(context)) {
+                                val intent = Intent(
+                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    Uri.parse("package:${context.packageName}")
+                                ).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                try {
+                                    context.startActivity(intent)
+                                    Toast.makeText(
+                                        context,
+                                        "Grant 'Display over other apps' to enable HUD Overlay",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } catch (_: Exception) {
+                                    // Fallback
+                                }
+                            } else {
+                                dashboardViewModel.toggleOverlay()
+                            }
+                        },
                         modifier = Modifier
                             .size(38.dp)
                             .background(
@@ -310,6 +338,8 @@ fun HyTuneAppShell(
             SettingsBottomSheet(
                 onDismissRequest = { showSettingsSheet = false },
                 privilegeTier = uiState.privilegeTier,
+                themeStyle = appSettings.themeStyle,
+                onThemeStyleChanged = { dashboardViewModel.setThemeStyle(it) },
                 onRequestRoot = { dashboardViewModel.requestRoot() }
             )
         }
