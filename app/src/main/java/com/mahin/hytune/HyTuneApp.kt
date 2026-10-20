@@ -21,8 +21,14 @@ class HyTuneApp : Application() {
     override fun onCreate() {
         super.onCreate()
         CoroutineScope(Dispatchers.IO).launch {
-            privilegeManager.requestRootAccess()
-            profileRepository.seedBuiltInProfilesIfEmpty()
+            runCatching {
+                if (::privilegeManager.isInitialized) {
+                    privilegeManager.requestRootAccess()
+                }
+                if (::profileRepository.isInitialized) {
+                    profileRepository.seedBuiltInProfilesIfEmpty()
+                }
+            }
         }
     }
 }
