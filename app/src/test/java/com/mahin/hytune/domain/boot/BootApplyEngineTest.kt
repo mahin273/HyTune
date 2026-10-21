@@ -26,6 +26,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -40,6 +41,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.IOException
+import java.util.concurrent.Executor
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -49,8 +51,7 @@ class BootApplyEngineTest {
     @get:Rule
     val tempFolder = TemporaryFolder()
 
-    private val testDispatcher = StandardTestDispatcher()
-    private lateinit var dataStoreScope: CoroutineScope
+    private lateinit var testDispatcher: TestDispatcher
     private lateinit var context: Context
     private lateinit var db: HyTuneDatabase
     private lateinit var fakeBackend: FakePrivilegeBackend
@@ -64,9 +65,13 @@ class BootApplyEngineTest {
 
     @Before
     fun setUp() {
+        testDispatcher = StandardTestDispatcher()
         context = ApplicationProvider.getApplicationContext()
+        val directExecutor = Executor { it.run() }
         db = Room.inMemoryDatabaseBuilder(context, HyTuneDatabase::class.java)
             .allowMainThreadQueries()
+            .setQueryExecutor(directExecutor)
+            .setTransactionExecutor(directExecutor)
             .build()
 
         fakeBackend = FakePrivilegeBackend()
@@ -105,9 +110,7 @@ class BootApplyEngineTest {
         fakeBackend.setFile("$blockDev/queue/rotational", "0\n")
         fakeBackend.setFile("$blockDev/size", "250069680\n")
 
-        dataStoreScope = CoroutineScope(testDispatcher + SupervisorJob())
         val testDataStore = PreferenceDataStoreFactory.create(
-            scope = dataStoreScope,
             produceFile = { tempFolder.newFile("test_boot_settings.preferences_pb") }
         )
         appSettingsRepository = AppSettingsRepository(testDataStore)
@@ -147,8 +150,9 @@ class BootApplyEngineTest {
     @After
     @Throws(IOException::class)
     fun tearDown() {
-        dataStoreScope.cancel()
-        db.close()
+        if (::db.isInitialized) {
+            db.close()
+        }
     }
 
     @Test

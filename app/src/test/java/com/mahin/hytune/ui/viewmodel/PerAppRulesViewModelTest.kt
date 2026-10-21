@@ -45,7 +45,6 @@ class PerAppRulesViewModelTest {
     val tempFolder = TemporaryFolder()
 
     private val testDispatcher = UnconfinedTestDispatcher()
-    private lateinit var dataStoreScope: CoroutineScope
     private lateinit var context: Context
     private lateinit var db: HyTuneDatabase
     private lateinit var appRuleRepository: AppRuleRepository
@@ -65,9 +64,7 @@ class PerAppRulesViewModelTest {
             .setTransactionExecutor(directExecutor)
             .build()
 
-        dataStoreScope = CoroutineScope(testDispatcher + SupervisorJob())
         val testDataStore = PreferenceDataStoreFactory.create(
-            scope = dataStoreScope,
             produceFile = { tempFolder.newFile("test_vm.preferences_pb") }
         )
         appSettingsRepository = AppSettingsRepository(testDataStore)
@@ -87,8 +84,9 @@ class PerAppRulesViewModelTest {
 
     @After
     fun tearDown() {
-        dataStoreScope.cancel()
-        db.close()
+        if (::db.isInitialized) {
+            db.close()
+        }
         Dispatchers.resetMain()
     }
 
