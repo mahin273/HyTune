@@ -339,7 +339,9 @@ fun HyTuneAppShell(
                 onDismissRequest = { showSettingsSheet = false },
                 privilegeTier = uiState.privilegeTier,
                 themeStyle = appSettings.themeStyle,
+                samplingIntervalMs = appSettings.samplingIntervalMs,
                 onThemeStyleChanged = { dashboardViewModel.setThemeStyle(it) },
+                onSamplingIntervalChanged = { dashboardViewModel.setSamplingIntervalMs(it) },
                 onRequestRoot = { dashboardViewModel.requestRoot() }
             )
         }

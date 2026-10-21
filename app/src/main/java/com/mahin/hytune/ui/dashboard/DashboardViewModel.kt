@@ -45,6 +45,10 @@ class DashboardViewModel @Inject constructor(
         settingsRepository.setThemeStyle(style)
     }
 
+    fun setSamplingIntervalMs(intervalMs: Long): Job = viewModelScope.launch {
+        settingsRepository.setSamplingIntervalMs(intervalMs)
+    }
+
     fun toggleOverlay(): Job = viewModelScope.launch {
         floatingOverlayManager?.toggleOverlay()
     }
@@ -125,7 +129,7 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    fun startSampling(intervalMs: Long = 1000L) {
+    fun startSampling(intervalMs: Long = 2000L) {
         sampleJob?.cancel()
         sampleJob = viewModelScope.launch {
             samplerEngine.sampleStream(intervalMs).collect { snapshot ->

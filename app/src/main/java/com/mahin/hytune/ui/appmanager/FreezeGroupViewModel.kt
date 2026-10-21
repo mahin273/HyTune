@@ -108,6 +108,14 @@ class FreezeGroupViewModel @Inject constructor(
         }
     }
 
+    fun togglePackageInGroup(groupId: Long, packageName: String, add: Boolean) {
+        if (add) {
+            addPackageToGroup(groupId, packageName)
+        } else {
+            removePackageFromGroup(groupId, packageName)
+        }
+    }
+
     fun freezeGroup(groupId: Long) {
         viewModelScope.launch(ioDispatcher) {
             _operatingGroupId.value = groupId

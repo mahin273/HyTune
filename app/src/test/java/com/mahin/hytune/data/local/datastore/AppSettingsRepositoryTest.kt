@@ -33,7 +33,7 @@ class AppSettingsRepositoryTest {
         assertEquals("balance", settings.activeProfileId)
         assertTrue(settings.temperatureUnitCelsius)
         assertFalse(settings.floatingMonitorEnabled)
-        assertEquals(1000L, settings.samplingIntervalMs)
+        assertEquals(2000L, settings.samplingIntervalMs)
         assertEquals(15, settings.safetyRollbackTimeoutSec)
         assertFalse(settings.perAppProfilesEnabled)
         assertTrue(settings.dynamicThemeEnabled)

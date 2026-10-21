@@ -49,12 +49,9 @@ import com.mahin.hytune.ui.theme.OnSurfaceVariantDark
 import com.mahin.hytune.ui.theme.OutlineDark
 import com.mahin.hytune.ui.theme.SurfaceVariantDark
 
-import com.mahin.hytune.ui.components.scene.GameAppItem
 import com.mahin.hytune.ui.components.scene.SceneCustomModeCard
-import com.mahin.hytune.ui.components.scene.SceneGamesBar
 import com.mahin.hytune.ui.dashboard.DashboardViewModel
 import com.mahin.hytune.ui.navigation.HyTuneDestination
-import com.mahin.hytune.ui.viewmodel.PerAppRulesViewModel
 
 enum class TuneCategory(val label: String) {
     CPU("CPU"),
@@ -69,7 +66,6 @@ enum class TuneCategory(val label: String) {
 fun TuneScreen(
     modifier: Modifier = Modifier,
     dashboardViewModel: DashboardViewModel = hiltViewModel(),
-    perAppViewModel: PerAppRulesViewModel = hiltViewModel(),
     cpuViewModel: CpuViewModel = hiltViewModel(),
     gpuViewModel: GpuViewModel = hiltViewModel(),
     memoryViewModel: MemoryViewModel = hiltViewModel(),
@@ -78,7 +74,6 @@ fun TuneScreen(
     onNavigateToTab: (HyTuneDestination) -> Unit = {}
 ) {
     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
-    val perAppUiState by perAppViewModel.uiState.collectAsStateWithLifecycle()
     val cpuUiState by cpuViewModel.uiState.collectAsStateWithLifecycle()
     val gpuUiState by gpuViewModel.uiState.collectAsStateWithLifecycle()
     val memoryUiState by memoryViewModel.uiState.collectAsStateWithLifecycle()
@@ -87,17 +82,6 @@ fun TuneScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedCategory by rememberSaveable { mutableStateOf(TuneCategory.CPU) }
-
-    val gamesList = remember(perAppUiState.apps) {
-        val detected = perAppUiState.apps.filter { it.isGame }.map {
-            GameAppItem(packageName = it.packageName, title = it.appLabel, isGame = true)
-        }
-        if (detected.isNotEmpty()) detected else listOf(
-            GameAppItem("com.konami.pesam", "eFootball", true),
-            GameAppItem("com.tencent.ig", "PUBG MOBILE", true),
-            GameAppItem("com.sloclap.sifu", "Sifu", true)
-        )
-    }
 
     LaunchedEffect(cpuUiState.userMessage) {
         val msg = cpuUiState.userMessage
@@ -178,14 +162,7 @@ fun TuneScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. Scene Games Bar (Screen 1 in mockup)
-                SceneGamesBar(
-                    games = gamesList,
-                    onAddAppClicked = { onNavigateToTab(HyTuneDestination.Apps) },
-                    onGameClicked = { onNavigateToTab(HyTuneDestination.Apps) }
-                )
-
-                // 2. Scene Custom Mode Switcher (Screen 1 in mockup)
+                // 1. Scene Custom Mode Switcher (Screen 1 in mockup)
                 SceneCustomModeCard(
                     profiles = dashboardUiState.profiles.map { com.mahin.hytune.ui.components.scene.ProfileModeItem(it.id, it.name) },
                     activeProfileId = dashboardUiState.activeProfileId,

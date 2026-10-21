@@ -1,5 +1,6 @@
 package com.mahin.hytune.ui.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -37,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -69,7 +71,9 @@ fun SettingsBottomSheet(
     privilegeTier: PrivilegeTier = PrivilegeTier.ROOT,
     floatingOverlayEnabled: Boolean = false,
     themeStyle: String = "dark",
+    samplingIntervalMs: Long = 2000L,
     onThemeStyleChanged: (String) -> Unit = {},
+    onSamplingIntervalChanged: (Long) -> Unit = {},
     onToggleFloatingOverlay: (Boolean) -> Unit = {},
     onRequestRoot: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -178,14 +182,14 @@ fun SettingsBottomSheet(
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(Color(0xFF1E1E1E))
                                     .border(
-                                        width = if (themeStyle == "dark") 2.dp else 1.dp,
-                                        color = if (themeStyle == "dark") LimePrimaryDark else OutlineDark,
+                                        width = if (themeStyle != "amoled") 2.dp else 1.dp,
+                                        color = if (themeStyle != "amoled") LimePrimaryDark else OutlineDark,
                                         shape = RoundedCornerShape(8.dp)
                                     )
                                     .clickable { onThemeStyleChanged("dark") },
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (themeStyle == "dark") {
+                                if (themeStyle != "amoled") {
                                     Box(
                                         modifier = Modifier
                                             .size(8.dp)
@@ -193,27 +197,61 @@ fun SettingsBottomSheet(
                                     )
                                 }
                             }
+                        }
+                    }
 
-                            // Light / Material You swatch
-                            Box(
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFFE8E8E8))
-                                    .border(
-                                        width = if (themeStyle == "light") 2.dp else 1.dp,
-                                        color = if (themeStyle == "light") LimePrimaryDark else OutlineDark,
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .clickable { onThemeStyleChanged("light") },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (themeStyle == "light") {
+                    HorizontalDivider(color = OutlineDark, thickness = 0.5.dp)
+
+                    // Checking Refresh Rate Setting (Item 5)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Column {
+                            Text(
+                                text = "Checking Refresh Rate",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = OnSurfaceDark
+                            )
+                            Text(
+                                text = "Hardware sensor & sysfs polling interval (${samplingIntervalMs / 1000}s)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = OnSurfaceVariantDark
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            val rates = listOf(
+                                1000L to "1s (Fast)",
+                                2000L to "2s (Balanced)",
+                                3000L to "3s (Relaxed)",
+                                5000L to "5s (Saver)"
+                            )
+                            for ((interval, label) in rates) {
+                                val isSelected = samplingIntervalMs == interval
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (isSelected) LimePrimaryDark else SurfaceVariantDark,
+                                    border = BorderStroke(1.dp, if (isSelected) LimePrimaryDark else OutlineDark),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { onSamplingIntervalChanged(interval) }
+                                ) {
                                     Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .background(Color.Black, CircleShape)
-                                    )
+                                        modifier = Modifier.padding(vertical = 8.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSelected) Color.Black else OnSurfaceDark
+                                        )
+                                    }
                                 }
                             }
                         }

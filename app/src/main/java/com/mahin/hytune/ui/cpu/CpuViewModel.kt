@@ -55,7 +55,7 @@ class CpuViewModel @Inject constructor(
         }
     }
 
-    fun startSampling(intervalMs: Long = 1000L) {
+    fun startSampling(intervalMs: Long = 2000L) {
         samplingJob?.cancel()
         samplingJob = viewModelScope.launch {
             samplerEngine.sampleStream(intervalMs).collect { snapshot ->

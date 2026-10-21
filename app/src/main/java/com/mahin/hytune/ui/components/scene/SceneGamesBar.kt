@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mahin.hytune.ui.components.AppIconImage
 import com.mahin.hytune.ui.theme.LimePrimaryDark
 import com.mahin.hytune.ui.theme.OnSurfaceDark
 import com.mahin.hytune.ui.theme.OnSurfaceVariantDark
@@ -120,11 +121,9 @@ fun SceneGamesBar(
                                 .border(1.dp, OutlineDark, RoundedCornerShape(14.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.SportsEsports,
-                                contentDescription = null,
-                                tint = LimePrimaryDark,
-                                modifier = Modifier.size(28.dp)
+                            AppIconImage(
+                                packageName = game.packageName,
+                                modifier = Modifier.size(44.dp)
                             )
                         }
                         Spacer(modifier = Modifier.height(6.dp))

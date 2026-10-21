@@ -21,12 +21,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class BatteryUiState(
     val batteryState: BatteryState = BatteryState(),
+    val powerHistory: List<Float> = emptyList(),
+    val tempHistory: List<Float> = emptyList(),
     val sessions: List<ChargingSession> = emptyList(),
     val chargeStatus: ChargeControlStatus = ChargeControlStatus(),
     val chargeConfig: ChargeControlConfig = ChargeControlConfig(),
@@ -106,9 +109,27 @@ class BatteryViewModel @Inject constructor(
         combine(_isLoading, _userMessage) { loading, message ->
             Pair(loading, message)
         }
-    ) { bg, tg, uiMisc ->
+    ) { bg, tg, misc ->
+        Triple(bg, tg, misc)
+    }.scan(
+        BatteryUiState(canDrawOverlays = floatingOverlayManager?.canDrawOverlays() ?: false)
+    ) { oldState, (bg, tg, misc) ->
+        val newPowerHistory = if (bg.batteryState != oldState.batteryState && bg.batteryState.powerWatts != 0f) {
+            (oldState.powerHistory + bg.batteryState.powerWatts).takeLast(30)
+        } else {
+            oldState.powerHistory
+        }
+        val curTemp = (tg.thermalSnapshot.cpuTempC ?: 0f).takeIf { it > 0f }
+            ?: (tg.thermalSnapshot.batteryTempC ?: 0f)
+        val newTempHistory = if (tg.thermalSnapshot != oldState.thermalSnapshot && curTemp > 0f) {
+            (oldState.tempHistory + curTemp).takeLast(30)
+        } else {
+            oldState.tempHistory
+        }
         BatteryUiState(
             batteryState = bg.batteryState,
+            powerHistory = newPowerHistory,
+            tempHistory = newTempHistory,
             sessions = bg.sessions,
             chargeStatus = bg.chargeStatus,
             chargeConfig = bg.chargeConfig,
@@ -117,8 +138,8 @@ class BatteryViewModel @Inject constructor(
             overlayConfig = tg.overlayConfig,
             isOverlayShowing = tg.isOverlayShowing,
             canDrawOverlays = floatingOverlayManager?.canDrawOverlays() ?: false,
-            isLoading = uiMisc.first,
-            userMessage = uiMisc.second
+            isLoading = misc.first,
+            userMessage = misc.second
         )
     }.stateIn(
         scope = viewModelScope,

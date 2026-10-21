@@ -12,6 +12,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AllInclusive
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DoNotDisturb
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -22,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -45,6 +55,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mahin.hytune.ui.appmanager.AppManagerTab
 import com.mahin.hytune.ui.components.AppIconImage
+import com.mahin.hytune.ui.components.scene.GameAppItem
+import com.mahin.hytune.ui.components.scene.SceneGamesBar
 import com.mahin.hytune.ui.model.AppItemUiModel
 import com.mahin.hytune.ui.viewmodel.AppFilterType
 import com.mahin.hytune.ui.viewmodel.PerAppRulesViewModel
@@ -55,18 +67,48 @@ fun AppsScreen(
 ) {
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("App Manager", "Per-App Profiles", "Processes")
+    val perAppViewModel: PerAppRulesViewModel = hiltViewModel()
+    val perAppUiState by perAppViewModel.uiState.collectAsState()
+    var selectedAppForEdit by remember { mutableStateOf<AppItemUiModel?>(null) }
+
+    val gamesAndBoosted = remember(perAppUiState.apps) {
+        perAppUiState.apps.filter { it.isGame || it.configuredProfileId != null }.map {
+            GameAppItem(packageName = it.packageName, title = it.appLabel, isGame = it.isGame)
+        }
+    }
 
     Column(
         modifier = modifier.fillMaxSize()
     ) {
+        // Games & Boosted Apps Carousel (Item 1 & Item 6)
+        SceneGamesBar(
+            games = gamesAndBoosted,
+            onAddAppClicked = { selectedTabIndex = 1 },
+            onGameClicked = { gameItem ->
+                val app = perAppUiState.apps.find { it.packageName == gameItem.packageName }
+                if (app != null) {
+                    selectedAppForEdit = app
+                }
+            },
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+        )
+
         TabRow(
             selectedTabIndex = selectedTabIndex,
             containerColor = MaterialTheme.colorScheme.surface
         ) {
             tabs.forEachIndexed { index, title ->
+                val icon = when (index) {
+                    0 -> Icons.Default.Apps
+                    1 -> Icons.Default.Tune
+                    else -> Icons.Default.Memory
+                }
                 Tab(
                     selected = selectedTabIndex == index,
                     onClick = { selectedTabIndex = index },
+                    icon = {
+                        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                    },
                     text = {
                         Text(
                             text = title,
@@ -80,9 +122,31 @@ fun AppsScreen(
 
         when (selectedTabIndex) {
             0 -> AppManagerTab()
-            1 -> PerAppProfilesTab()
+            1 -> PerAppProfilesTab(viewModel = perAppViewModel)
             2 -> com.mahin.hytune.ui.process.ProcessManagerTab()
         }
+    }
+
+    selectedAppForEdit?.let { app ->
+        AppRuleConfigDialog(
+            app = app,
+            availableProfiles = perAppUiState.availableProfiles.map { it.id },
+            onDismiss = { selectedAppForEdit = null },
+            onSave = { profileId, isGame, refreshRate, dnd ->
+                perAppViewModel.saveAppRule(
+                    packageName = app.packageName,
+                    profileId = profileId,
+                    isGame = isGame,
+                    targetRefreshRate = refreshRate,
+                    dndEnabled = dnd
+                )
+                selectedAppForEdit = null
+            },
+            onDelete = {
+                perAppViewModel.removeAppRule(app.packageName)
+                selectedAppForEdit = null
+            }
+        )
     }
 }
 
@@ -149,17 +213,38 @@ fun PerAppProfilesTab(
             FilterChip(
                 selected = uiState.filterType == AppFilterType.ALL,
                 onClick = { viewModel.setFilterType(AppFilterType.ALL) },
-                label = { Text("All") }
+                label = { Text("All") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.AllInclusive,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             )
             FilterChip(
                 selected = uiState.filterType == AppFilterType.GAMES,
                 onClick = { viewModel.setFilterType(AppFilterType.GAMES) },
-                label = { Text("Games") }
+                label = { Text("Games") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.SportsEsports,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             )
             FilterChip(
                 selected = uiState.filterType == AppFilterType.CONFIGURED,
                 onClick = { viewModel.setFilterType(AppFilterType.CONFIGURED) },
-                label = { Text("Configured") }
+                label = { Text("Configured") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             )
         }
 
@@ -258,12 +343,23 @@ fun AppRowCard(
                             shape = MaterialTheme.shapes.extraSmall,
                             color = MaterialTheme.colorScheme.tertiaryContainer
                         ) {
-                            Text(
-                                text = "Game",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SportsEsports,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Text(
+                                    text = "Game",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
                         }
                     }
                 }
@@ -286,30 +382,64 @@ fun AppRowCard(
                         MaterialTheme.colorScheme.surfaceVariant
                     }
                 ) {
-                    Text(
-                        text = profileText,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (app.configuredProfileId != null) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (app.configuredProfileId != null) {
+                            Icon(
+                                imageVector = Icons.Default.Tune,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
+                        Text(
+                            text = profileText,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (app.configuredProfileId != null) {
+                                MaterialTheme.colorScheme.onPrimary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
                 }
 
                 if (app.targetRefreshRate != null || app.dndEnabled) {
-                    val extras = buildList {
-                        if (app.targetRefreshRate != null) add("${app.targetRefreshRate}Hz")
-                        if (app.dndEnabled) add("DND")
-                    }.joinToString(" | ")
-
-                    Text(
-                        text = extras,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(top = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (app.targetRefreshRate != null) {
+                            Icon(
+                                imageVector = Icons.Default.Speed,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(
+                                text = "${app.targetRefreshRate}Hz",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        if (app.dndEnabled) {
+                            Icon(
+                                imageVector = Icons.Default.DoNotDisturb,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(
+                                text = "DND",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 }
             }
         }

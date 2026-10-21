@@ -16,6 +16,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.AllInclusive
+import androidx.compose.material.icons.filled.Android
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.PauseCircle
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -24,6 +32,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -38,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,15 +78,16 @@ fun AppManagerTab(
     if (isCreatingOrEditing) {
         FreezeGroupDialog(
             group = selectedGroup,
+            installedApps = uiState.apps,
             onDismiss = { freezeGroupViewModel.dismissDialog() },
-            onSave = { id, name, description, autoFreeze, delaySeconds ->
+            onSave = { id, name, description, autoFreeze, delaySeconds, packages ->
                 freezeGroupViewModel.saveGroup(
                     id = id,
                     name = name,
                     description = description,
                     autoFreeze = autoFreeze,
                     delaySeconds = delaySeconds,
-                    packages = selectedGroup?.packages ?: emptyList()
+                    packages = packages
                 )
             }
         )
@@ -93,11 +104,11 @@ fun AppManagerTab(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            QuickStatBadge("Total", uiState.totalCount, Modifier.weight(1f))
-            QuickStatBadge("User", uiState.userAppCount, Modifier.weight(1f))
-            QuickStatBadge("System", uiState.systemAppCount, Modifier.weight(1f))
-            QuickStatBadge("Disabled", uiState.disabledCount, Modifier.weight(1f))
-            QuickStatBadge("Games", uiState.gamesCount, Modifier.weight(1f))
+            QuickStatBadge("Total", uiState.totalCount, Icons.Default.Apps, Modifier.weight(1f))
+            QuickStatBadge("User", uiState.userAppCount, Icons.Default.Person, Modifier.weight(1f))
+            QuickStatBadge("System", uiState.systemAppCount, Icons.Default.Android, Modifier.weight(1f))
+            QuickStatBadge("Disabled", uiState.disabledCount, Icons.Default.AcUnit, Modifier.weight(1f))
+            QuickStatBadge("Games", uiState.gamesCount, Icons.Default.SportsEsports, Modifier.weight(1f))
         }
 
         // Operation Status Banner
@@ -169,10 +180,24 @@ fun AppManagerTab(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 AppTypeFilter.entries.forEach { filter ->
+                    val filterIcon = when (filter) {
+                        AppTypeFilter.ALL -> Icons.Default.AllInclusive
+                        AppTypeFilter.USER -> Icons.Default.Person
+                        AppTypeFilter.SYSTEM -> Icons.Default.Android
+                        AppTypeFilter.DISABLED -> Icons.Default.AcUnit
+                        AppTypeFilter.GAMES -> Icons.Default.SportsEsports
+                    }
                     FilterChip(
                         selected = uiState.filter == filter,
                         onClick = { viewModel.setFilter(filter) },
-                        label = { Text(filter.displayName) }
+                        label = { Text(filter.displayName) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = filterIcon,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     )
                 }
             }
@@ -269,6 +294,10 @@ fun AppManagerTab(
         AppInspectionBottomSheet(
             details = details,
             sheetState = sheetState,
+            freezeGroups = freezeGroups,
+            onTogglePackageInGroup = { groupId, pkg, add ->
+                freezeGroupViewModel.togglePackageInGroup(groupId, pkg, add)
+            },
             onDismiss = { viewModel.clearSelectedApp() },
             onExecuteOperation = { operation, keepData ->
                 viewModel.executeOperation(
@@ -286,6 +315,7 @@ fun AppManagerTab(
 private fun QuickStatBadge(
     label: String,
     count: Int,
+    icon: ImageVector? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -297,6 +327,15 @@ private fun QuickStatBadge(
             modifier = Modifier.padding(vertical = 6.dp, horizontal = 2.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+            }
             Text(
                 text = count.toString(),
                 style = MaterialTheme.typography.labelLarge,
