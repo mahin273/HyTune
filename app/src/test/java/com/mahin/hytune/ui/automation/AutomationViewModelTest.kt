@@ -174,8 +174,12 @@ class AutomationViewModelTest {
     @After
     @Throws(IOException::class)
     fun tearDown() {
-        repository.stopEngine()
-        db.close()
+        if (::repository.isInitialized) {
+            repository.stopEngine()
+        }
+        if (::db.isInitialized) {
+            db.close()
+        }
         Dispatchers.resetMain()
     }
 

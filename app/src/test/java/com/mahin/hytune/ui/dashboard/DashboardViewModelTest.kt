@@ -146,6 +146,7 @@ class DashboardViewModelTest {
             updatedAtEpochMs = 1000L
         )
         fakeProfileDao.upsertProfile(testProfile)
+        advanceUntilIdle()
 
         val state = viewModel.uiState.value
         assertTrue(state.profiles.any { it.id == "custom_1" })

@@ -32,7 +32,11 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
         enableEdgeToEdge()
         setContent {
-            val settings by appSettingsRepository.settings.collectAsState(initial = AppSettings())
+            val settings by if (::appSettingsRepository.isInitialized) {
+                appSettingsRepository.settings.collectAsState(initial = AppSettings())
+            } else {
+                androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(AppSettings()) }
+            }
             val isAmoled = settings.themeStyle == "amoled"
 
             HyTuneTheme(
@@ -55,18 +59,20 @@ class MainActivity : ComponentActivity() {
             val groupId = intent.getLongExtra("group_id", -1L)
             if (groupId != -1L) {
                 lifecycleScope.launch {
-                    freezeGroupRepository.unfreezeGroup(groupId).onSuccess { res ->
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Unfrozen ${res.successCount} apps in ${res.groupName}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }.onFailure { err ->
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Failed to unfreeze: ${err.message}",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                    if (::freezeGroupRepository.isInitialized) {
+                        freezeGroupRepository.unfreezeGroup(groupId).onSuccess { res ->
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Unfrozen ${res.successCount} apps in ${res.groupName}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }.onFailure { err ->
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Failed to unfreeze: ${err.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             }
