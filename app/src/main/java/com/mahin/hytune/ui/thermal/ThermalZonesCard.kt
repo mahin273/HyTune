@@ -5,22 +5,33 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mahin.hytune.domain.thermal.model.ThermalSnapshot
 import com.mahin.hytune.domain.thermal.model.ThermalThrottleEvent
+import com.mahin.hytune.ui.components.SparklineCanvas
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,6 +41,7 @@ fun ThermalZonesCard(
     snapshot: ThermalSnapshot,
     throttleEvents: List<ThermalThrottleEvent>,
     onClearEvents: () -> Unit,
+    tempHistory: List<Float> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -47,18 +59,30 @@ fun ThermalZonesCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = "Thermal Zones & Throttling",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Thermostat,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
                     )
-                    val zoneCount = snapshot.zones.size
-                    Text(
-                        text = "$zoneCount thermal zones monitored",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column {
+                        Text(
+                            text = "Thermal Zones & Throttling",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        val zoneCount = snapshot.zones.size
+                        Text(
+                            text = "$zoneCount thermal zones monitored",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 val isThrottling = snapshot.isThrottling
@@ -113,6 +137,58 @@ fun ThermalZonesCard(
                     tempC = snapshot.socTempC,
                     modifier = Modifier.weight(1f)
                 )
+            }
+
+            // Thermal Trend Graph (Item 7)
+            val cpuVal: Float = snapshot.cpuTempC ?: snapshot.batteryTempC ?: 35f
+            val points = if (tempHistory.size >= 2) {
+                tempHistory
+            } else {
+                listOf(cpuVal, cpuVal)
+            }
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Thermal Trend",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        val latestTemp: Float = tempHistory.lastOrNull() ?: cpuVal
+                        val isHot = latestTemp >= 70f
+                        Text(
+                            text = String.format(Locale.US, "%.1f C", latestTemp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isHot) Color(0xFFFF5252) else Color(0xFFFFA726)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                    ) {
+                        SparklineCanvas(
+                            dataPoints = points,
+                            lineColor = if (snapshot.isThrottling) Color(0xFFFF5252) else Color(0xFFFFA726),
+                            fillColor = (if (snapshot.isThrottling) Color(0xFFFF5252) else Color(0xFFFFA726)).copy(alpha = 0.2f),
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
             }
 
             // Monitored Sensor Zones List

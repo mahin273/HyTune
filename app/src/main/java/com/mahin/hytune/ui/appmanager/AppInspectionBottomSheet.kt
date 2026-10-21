@@ -1,5 +1,6 @@
 package com.mahin.hytune.ui.appmanager
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -39,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mahin.hytune.domain.appmanager.model.AppDetails
 import com.mahin.hytune.domain.appmanager.model.AppOperation
+import com.mahin.hytune.domain.appmanager.model.FreezeGroup
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,6 +52,8 @@ fun AppInspectionBottomSheet(
     details: AppDetails,
     sheetState: SheetState,
     onDismiss: () -> Unit,
+    freezeGroups: List<FreezeGroup> = emptyList(),
+    onTogglePackageInGroup: (groupId: Long, packageName: String, inGroup: Boolean) -> Unit = { _, _, _ -> },
     onExecuteOperation: (AppOperation, Boolean) -> Unit = { _, _ -> },
     isOperationRunning: Boolean = false,
     modifier: Modifier = Modifier
@@ -270,6 +275,62 @@ fun AppInspectionBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Freeze Groups Membership
+                if (freezeGroups.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "Freeze Groups Membership",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                freezeGroups.forEach { group ->
+                                    val isInGroup = group.packages.contains(details.summary.packageName)
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                onTogglePackageInGroup(group.id, details.summary.packageName, !isInGroup)
+                                            },
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = group.name,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "${group.packages.size} apps in group",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Checkbox(
+                                            checked = isInGroup,
+                                            onCheckedChange = { checked ->
+                                                onTogglePackageInGroup(group.id, details.summary.packageName, checked)
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Section 1: Version & SDK Targets
                 item {
                     Text(

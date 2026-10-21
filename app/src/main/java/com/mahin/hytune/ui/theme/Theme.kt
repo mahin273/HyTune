@@ -79,14 +79,11 @@ fun HyTuneTheme(
 ) {
     val context = LocalContext.current
     val baseScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> dynamicDarkColorScheme(context)
+        else -> DarkColorScheme
     }
 
-    val finalScheme = if (darkTheme && amoledMode) {
+    val finalScheme = if (amoledMode) {
         createAmoledColorScheme(baseScheme)
     } else {
         baseScheme
